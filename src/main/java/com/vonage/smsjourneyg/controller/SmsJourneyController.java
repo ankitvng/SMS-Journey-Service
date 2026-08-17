@@ -1,44 +1,54 @@
 package com.vonage.smsjourneyg.controller;
 
-import com.vonage.smsjourneyg.entity.SmsJourney;
+import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.service.SmsJourneyService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
 @RestController
-@RequestMapping("/api/journeys")
+@RequestMapping("/api/sms")
+@RequiredArgsConstructor
 public class SmsJourneyController {
-    @Autowired
-    private SmsJourneyService service;
 
-    @PostMapping
-    public ResponseEntity<SmsJourney> create(@RequestBody SmsJourney journey) {
-        return ResponseEntity.ok(service.createJourney(journey));
+    private final SmsJourneyService journeyService;
+
+
+    @PostMapping("/{smsId}/journeys")
+    public ResponseEntity<SmsJourneyDto> createJourney(
+            @PathVariable Long smsId,
+            @RequestBody SmsJourneyDto request) {
+
+        SmsJourneyDto response =
+                journeyService.createJourney(
+                        smsId,
+                        request
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
     }
 
-    @GetMapping
-    public ResponseEntity<List<SmsJourney>> getAll() {
-        return ResponseEntity.ok(service.getAllJourneys());
+
+    @GetMapping("/{smsId}/journeys")
+    public ResponseEntity<List<SmsJourneyDto>> getJourneys(
+            @PathVariable Long smsId) {
+
+        return ResponseEntity.ok(
+                journeyService.getJourneysBySms(smsId)
+        );
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<SmsJourney> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getJourneyById(id));
-    }
+    @PostMapping("/journeys/{journeyId}/process")
+    public ResponseEntity<Void> processJourney(
+            @PathVariable Long journeyId) {
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<SmsJourney> update(@PathVariable Long id, @RequestBody SmsJourney updatedData) {
-        return ResponseEntity.ok(service.updateJourney(id, updatedData));
-    }
+        journeyService.processJourney(journeyId);
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Long id) {
-        service.deleteJourney(id);
-        return ResponseEntity.ok("Journey deleted successfully.");
+        return ResponseEntity.ok().build();
     }
 }

@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SmsJourneyRepository extends JpaRepository<SmsJourney, Long> {
-    List<SmsJourney> findByStatus(String status);
+
+    List<SmsJourney> findBySmsSmsId(Long smsId);
 }
