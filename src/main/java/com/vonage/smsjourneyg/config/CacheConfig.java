@@ -17,7 +17,7 @@ public class CacheConfig {
     public CacheManager cacheManager() {
 
         CaffeineCacheManager cacheManager =
-                new CaffeineCacheManager("sms");
+                new CaffeineCacheManager("sms","SmsJourney");
 
         cacheManager.setCaffeine(
                 Caffeine.newBuilder()

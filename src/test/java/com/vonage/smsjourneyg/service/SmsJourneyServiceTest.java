@@ -3,6 +3,7 @@ package com.vonage.smsjourneyg.service;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class SmsJourneyServiceTest {
         sms.setSmsId(100L);
         sms.setRecipient("+919876543210");
         sms.setMessage("Test Message");
-        sms.setStatus("CREATED");
+        sms.setStatus(SmsStatus.CREATED);
 
         journey = new SmsJourney();
         journey.setId(1L);
@@ -55,7 +56,7 @@ class SmsJourneyServiceTest {
         journey.setPrimaryRoute("ROUTE_A");
         journey.setFallbackRoute("ROUTE_B");
         journey.setCost(0.05);
-        journey.setStatus("SCHEDULED");
+        journey.setStatus(SmsStatus.SCHEDULED);
         journey.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
 
         requestDto = new SmsJourneyDto();
@@ -83,7 +84,7 @@ class SmsJourneyServiceTest {
         assertEquals("ROUTE_A", result.getPrimaryRoute());
         assertEquals("ROUTE_B", result.getFallbackRoute());
         assertEquals(0.05, result.getCost());
-        assertEquals("SCHEDULED", result.getStatus());
+        assertEquals(SmsStatus.SCHEDULED, result.getStatus());
         assertEquals(LocalDateTime.of(2026, 8, 17, 12, 0), result.getScheduledTime());
 
         verify(smsRepository, times(1)).findById(100L);
@@ -145,8 +146,8 @@ class SmsJourneyServiceTest {
 
         journeyService.processJourney(1L);
 
-        assertEquals("SENT", journey.getStatus());
-        assertEquals("SENT", sms.getStatus());
+        assertEquals(SmsStatus.SENT, journey.getStatus());
+        assertEquals(SmsStatus.SENT, sms.getStatus());
 
         verify(routingService, times(1)).sendSms("ROUTE_A", sms);
         verify(routingService, never()).sendSms(eq("ROUTE_B"), any());
@@ -179,8 +180,8 @@ class SmsJourneyServiceTest {
 
         journeyService.processJourney(1L);
 
-        assertEquals("FAILED", journey.getStatus());
-        assertEquals("FAILED", sms.getStatus());
+        assertEquals(SmsStatus.FAILED, journey.getStatus());
+        assertEquals(SmsStatus.FAILED, sms.getStatus());
 
         verify(routingService, times(1)).sendSms("ROUTE_A", sms);
         verify(routingService, times(1)).sendSms("ROUTE_B", sms);

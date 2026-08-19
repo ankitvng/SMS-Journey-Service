@@ -3,6 +3,7 @@ package com.vonage.smsjourneyg.service;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,7 @@ public class SmsService {
 
         sms.setRecipient(request.getRecipient());
         sms.setMessage(request.getMessage());
-        sms.setStatus("CREATED");
+        sms.setStatus(SmsStatus.CREATED);
         sms.setCreatedAt(LocalDateTime.now());
 
         Sms savedSms = smsRepository.save(sms);

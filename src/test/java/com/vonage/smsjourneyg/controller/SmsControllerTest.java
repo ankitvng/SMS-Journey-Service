@@ -3,6 +3,7 @@ package com.vonage.smsjourneyg.controller;
 
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.service.SmsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ class SmsControllerTest {
         response.setSmsId(1L);
         response.setRecipient("+919876543210");
         response.setMessage("Hello");
-        response.setStatus("CREATED");
+        response.setStatus(SmsStatus.CREATED);
 
         when(smsService.createSms(any(SmsRequestDto.class))).thenReturn(response);
 
@@ -56,7 +57,7 @@ class SmsControllerTest {
                 .andExpect(jsonPath("$.smsId").value(1))
                 .andExpect(jsonPath("$.recipient").value("+919876543210"))
                 .andExpect(jsonPath("$.message").value("Hello"))
-                .andExpect(jsonPath("$.status").value("CREATED"));
+                .andExpect(jsonPath("$.status").value(SmsStatus.CREATED.name()));
     }
 
     @Test
@@ -65,7 +66,7 @@ class SmsControllerTest {
         response.setSmsId(1L);
         response.setRecipient("+919876543210");
         response.setMessage("Hello");
-        response.setStatus("SENT");
+        response.setStatus(SmsStatus.SENT);
 
         when(smsService.getSms(1L)).thenReturn(response);
 
@@ -76,7 +77,7 @@ class SmsControllerTest {
                 .andExpect(jsonPath("$.smsId").value(1))
                 .andExpect(jsonPath("$.recipient").value("+919876543210"))
                 .andExpect(jsonPath("$.message").value("Hello"))
-                .andExpect(jsonPath("$.status").value("SENT"));
+                .andExpect(jsonPath("$.status").value(SmsStatus.SENT.name()));
     }
 
     @Test
@@ -85,13 +86,13 @@ class SmsControllerTest {
         response1.setSmsId(1L);
         response1.setRecipient("+919876543210");
         response1.setMessage("Hello");
-        response1.setStatus("SENT");
+        response1.setStatus(SmsStatus.SENT);
 
         SmsResponseDto response2 = new SmsResponseDto();
         response2.setSmsId(2L);
         response2.setRecipient("+919876543211");
         response2.setMessage("World");
-        response2.setStatus("PENDING");
+        response2.setStatus(SmsStatus.SENT);
 
         when(smsService.getAllSms()).thenReturn(List.of(response1, response2));
 
@@ -101,9 +102,9 @@ class SmsControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].smsId").value(1))
-                .andExpect(jsonPath("$[0].status").value("SENT"))
+                .andExpect(jsonPath("$[0].status").value(SmsStatus.SENT.name()))
                 .andExpect(jsonPath("$[1].smsId").value(2))
-                .andExpect(jsonPath("$[1].status").value("PENDING"));
+                .andExpect(jsonPath("$[1].status").value(SmsStatus.SENT.name()));
     }
 
     @Test

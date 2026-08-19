@@ -3,6 +3,7 @@ package com.vonage.smsjourneyg.service;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class SmsServiceTest {
         sms.setSmsId(1L);
         sms.setRecipient("+919876543210");
         sms.setMessage("Hello World");
-        sms.setStatus("CREATED");
+        sms.setStatus(SmsStatus.CREATED);
         sms.setCreatedAt(LocalDateTime.now());
 
         smsRequestDto = new SmsRequestDto();
@@ -57,7 +58,7 @@ class SmsServiceTest {
         assertEquals(1L, result.getSmsId());
         assertEquals("+919876543210", result.getRecipient());
         assertEquals("Hello World", result.getMessage());
-        assertEquals("CREATED", result.getStatus());
+        assertEquals(SmsStatus.CREATED, result.getStatus());
         assertNotNull(result.getCreatedAt());
 
         verify(smsRepository, times(1)).save(any(Sms.class));
@@ -75,7 +76,7 @@ class SmsServiceTest {
         assertEquals(1L, result.getSmsId());
         assertEquals("+919876543210", result.getRecipient());
         assertEquals("Hello World", result.getMessage());
-        assertEquals("CREATED", result.getStatus());
+        assertEquals(SmsStatus.CREATED, result.getStatus());
 
         verify(smsRepository, times(1)).findById(1L);
     }
@@ -101,7 +102,7 @@ class SmsServiceTest {
         sms2.setSmsId(2L);
         sms2.setRecipient("+919876543211");
         sms2.setMessage("Second Message");
-        sms2.setStatus("SENT");
+        sms2.setStatus(SmsStatus.SENT);
         sms2.setCreatedAt(LocalDateTime.now());
 
         when(smsRepository.findAll()).thenReturn(List.of(sms, sms2));

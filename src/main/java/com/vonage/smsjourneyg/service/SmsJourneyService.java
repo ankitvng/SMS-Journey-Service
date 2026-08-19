@@ -3,11 +3,15 @@ package com.vonage.smsjourneyg.service;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,6 +26,7 @@ public class SmsJourneyService {
 
 
     // Create a journey for an SMS
+    @CacheEvict(value = "smsJourneys", key = "#smsId")
     public SmsJourneyDto createJourney(
             Long smsId,
             SmsJourneyDto request) {
@@ -59,7 +64,7 @@ public class SmsJourneyService {
         journey.setScheduledTime(
                 request.getScheduledTime()
         );
-        journey.setStatus("SCHEDULED");
+        journey.setStatus(SmsStatus.SCHEDULED);
 
         SmsJourney savedJourney =
                 journeyRepository.save(journey);
@@ -75,6 +80,7 @@ public class SmsJourneyService {
 
 
     // Get all journeys belonging to an SMS
+    @Cacheable(value = "smsJourneys", key = "#smsId")
     public List<SmsJourneyDto> getJourneysBySms(
             Long smsId) {
 
@@ -98,7 +104,9 @@ public class SmsJourneyService {
 
 
     // Process a journey
-    public void processJourney(Long journeyId) {
+    @Transactional
+    @CacheEvict(value = "smsJourneys", key = "#result")
+    public Long processJourney(Long journeyId) {
 
         log.info(
                 "Processing journey {}",
@@ -125,9 +133,9 @@ public class SmsJourneyService {
 
         if (primarySuccess) {
 
-            journey.setStatus("SENT");
+            journey.setStatus(SmsStatus.SENT);
 
-            sms.setStatus("SENT");
+            sms.setStatus(SmsStatus.SENT);
 
             log.info(
                     "SMS {} successfully sent through primary route {}",
@@ -151,9 +159,9 @@ public class SmsJourneyService {
 
             if (fallbackSuccess) {
 
-                journey.setStatus("SENT");
+                journey.setStatus(SmsStatus.SENT);
 
-                sms.setStatus("SENT");
+                sms.setStatus(SmsStatus.SENT);
 
                 log.info(
                         "SMS {} successfully sent through fallback route {}",
@@ -163,9 +171,9 @@ public class SmsJourneyService {
 
             } else {
 
-                journey.setStatus("FAILED");
+                journey.setStatus(SmsStatus.FAILED);
 
-                sms.setStatus("FAILED");
+                sms.setStatus(SmsStatus.FAILED);
 
                 log.error(
                         "SMS {} failed through both routes",
@@ -176,6 +184,8 @@ public class SmsJourneyService {
 
         journeyRepository.save(journey);
         smsRepository.save(sms);
+
+        return journey.getSms().getSmsId();
     }
 
 

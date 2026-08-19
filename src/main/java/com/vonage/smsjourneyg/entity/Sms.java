@@ -1,6 +1,7 @@
 package com.vonage.smsjourneyg.entity;
 
-import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -21,7 +22,8 @@ public class Sms {
     @Column(columnDefinition = "TEXT")
     private String message;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private SmsStatus status;
 
     private LocalDateTime createdAt;
 

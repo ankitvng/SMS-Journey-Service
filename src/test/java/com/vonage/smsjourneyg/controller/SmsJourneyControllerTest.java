@@ -2,6 +2,7 @@ package com.vonage.smsjourneyg.controller;
 
 
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.service.SmsJourneyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +47,7 @@ class SmsJourneyControllerTest {
         request.setPrimaryRoute("ROUTE_A");
         request.setFallbackRoute("ROUTE_B");
         request.setCost(0.05);
-        request.setStatus("PENDING");
+        request.setStatus(SmsStatus.PENDING);
 
         SmsJourneyDto response = new SmsJourneyDto();
         response.setId(1L);
@@ -55,7 +56,7 @@ class SmsJourneyControllerTest {
         response.setPrimaryRoute("ROUTE_A");
         response.setFallbackRoute("ROUTE_B");
         response.setCost(0.05);
-        response.setStatus("PENDING");
+        response.setStatus(SmsStatus.PENDING);
 
         when(journeyService.createJourney(eq(smsId), any(SmsJourneyDto.class)))
                 .thenReturn(response);
@@ -72,7 +73,7 @@ class SmsJourneyControllerTest {
                 .andExpect(jsonPath("$.primaryRoute").value("ROUTE_A"))
                 .andExpect(jsonPath("$.fallbackRoute").value("ROUTE_B"))
                 .andExpect(jsonPath("$.cost").value(0.05))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(jsonPath("$.status").value(SmsStatus.PENDING.name()));
     }
 
     @Test
@@ -82,12 +83,12 @@ class SmsJourneyControllerTest {
         SmsJourneyDto journey1 = new SmsJourneyDto();
         journey1.setId(1L);
         journey1.setCampaignName("Campaign 1");
-        journey1.setStatus("COMPLETED");
+        journey1.setStatus(SmsStatus.COMPLETED);
 
         SmsJourneyDto journey2 = new SmsJourneyDto();
         journey2.setId(2L);
         journey2.setCampaignName("Campaign 2");
-        journey2.setStatus("PENDING");
+        journey2.setStatus(SmsStatus.PENDING);
 
         when(journeyService.getJourneysBySms(smsId))
                 .thenReturn(List.of(journey1, journey2));
@@ -99,10 +100,10 @@ class SmsJourneyControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].campaignName").value("Campaign 1"))
-                .andExpect(jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(jsonPath("$[0].status").value(SmsStatus.COMPLETED.name()))
                 .andExpect(jsonPath("$[1].id").value(2))
                 .andExpect(jsonPath("$[1].campaignName").value("Campaign 2"))
-                .andExpect(jsonPath("$[1].status").value("PENDING"));
+                .andExpect(jsonPath("$[1].status").value(SmsStatus.PENDING.name()));
     }
 
     @Test

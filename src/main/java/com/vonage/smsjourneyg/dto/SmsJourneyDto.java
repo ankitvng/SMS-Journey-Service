@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.dto;
 
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,7 @@ public class SmsJourneyDto {
 
     private double cost;
 
-    private String status;
+    private SmsStatus status;
 
     private LocalDateTime scheduledTime;
 }

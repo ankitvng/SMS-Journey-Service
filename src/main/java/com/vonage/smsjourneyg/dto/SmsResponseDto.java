@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.dto;
 
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -14,7 +15,7 @@ public class SmsResponseDto {
 
     private String message;
 
-    private String status;
+    private SmsStatus status;
 
     private LocalDateTime createdAt;
 
