@@ -163,8 +163,8 @@ class SmsJourneyServiceTest {
 
         journeyService.processJourney(1L);
 
-        assertEquals("SENT", journey.getStatus());
-        assertEquals("SENT", sms.getStatus());
+        assertEquals(SmsStatus.SENT, journey.getStatus());
+        assertEquals(SmsStatus.SENT, sms.getStatus());
 
         verify(routingService, times(1)).sendSms("ROUTE_A", sms);
         verify(routingService, times(1)).sendSms("ROUTE_B", sms);

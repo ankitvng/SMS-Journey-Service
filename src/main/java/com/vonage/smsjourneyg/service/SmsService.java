@@ -8,6 +8,7 @@ import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ public class SmsService {
 
     private final SmsRepository smsRepository;
 
+    @CachePut(value = "sms", key = "#result.smsId")
     public SmsResponseDto createSms(SmsRequestDto request) {
 
         log.info(
