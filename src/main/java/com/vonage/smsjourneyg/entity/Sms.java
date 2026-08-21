@@ -25,6 +25,8 @@ public class Sms {
     @Enumerated(EnumType.STRING)
     private SmsStatus status;
 
+    private LocalDateTime deletedAt;
+
     private LocalDateTime createdAt;
 
     @OneToMany(

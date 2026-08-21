@@ -5,11 +5,11 @@ import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.service.SmsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/sms")
@@ -18,7 +18,6 @@ public class SmsController {
 
     private final SmsService smsService;
 
-    // Create SMS
     @PostMapping
     public ResponseEntity<SmsResponseDto> createSms(
             @Valid @RequestBody SmsRequestDto request) {
@@ -30,7 +29,6 @@ public class SmsController {
                 .body(response);
     }
 
-    // Get SMS by ID
     @GetMapping("/{smsId}")
     public ResponseEntity<SmsResponseDto> getSms(
             @PathVariable Long smsId) {
@@ -40,16 +38,15 @@ public class SmsController {
         return ResponseEntity.ok(response);
     }
 
-    // Get all SMS
     @GetMapping
-    public ResponseEntity<List<SmsResponseDto>> getAllSms() {
+    public ResponseEntity<Page<SmsResponseDto>> getAllSms(
+            Pageable pageable) {
 
         return ResponseEntity.ok(
-                smsService.getAllSms()
+                smsService.getAllSms(pageable)
         );
     }
 
-    // Delete SMS
     @DeleteMapping("/{smsId}")
     public ResponseEntity<Void> deleteSms(
             @PathVariable Long smsId) {

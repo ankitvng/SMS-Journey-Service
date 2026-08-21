@@ -15,9 +15,6 @@ public class SmsJourney {
 
     private String campaignName;
 
-//    @Column(columnDefinition = "TEXT")
-//    private String smsBody;
-//
     private String routingStep;
     private String primaryRoute;
     private String fallbackRoute;
@@ -32,5 +29,3 @@ public class SmsJourney {
     @JoinColumn(name = "sms_id")
     private Sms sms;
 }
-//smsId, routingStep,Status, Time,
-//sms entity (O-M)one msg can have multiple routes/journeys
