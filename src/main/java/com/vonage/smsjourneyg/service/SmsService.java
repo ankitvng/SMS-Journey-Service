@@ -7,6 +7,7 @@ import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
+import com.vonage.smsjourneyg.mapper.SmsMapper;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class SmsService {
 
     private final SmsRepository smsRepository;
     private final SmsCache smsCache;
+    private final SmsMapper smsMapper;
 
     public List<SmsResponseDto> getAllSms() {
         log.info("Getting all SMS");
@@ -93,47 +95,16 @@ public class SmsService {
         smsCache.invalidate();
     }
 
-    public void processIncomingSms(
-            SmsReceivedEvent event) {
+    public void processIncomingSms(SmsReceivedEvent event) {
 
-        Optional<Sms> existingSms =
-                smsRepository
-                        .findByExternalSmsId(
-                                event.getSmsId()
-                        );
+        Optional<Sms> existingSms = smsRepository.findByExternalSmsId(event.getSmsId());
 
-        if (existingSms.isPresent()) {
-
-            log.info(
-                    "SMS {} already exists. Ignoring duplicate event.",
-                    event.getSmsId()
-            );
-
+        if(existingSms.isPresent()){
+            log.info("SMS with external ID {} already exists. Skipping creation.", event.getSmsId());
             return;
         }
-
-        Sms sms = new Sms();
-
-        sms.setExternalSmsId(
-                String.valueOf(event.getSmsId())
-        );
-
-        sms.setRecipient(
-                event.getRecipient()
-        );
-
-        sms.setMessage(
-                event.getMessage()
-        );
-
-        sms.setStatus(SmsStatus.SCHEDULED);
-
-        sms.setCreatedAt(
-                event.getReceivedAt()
-        );
-
+        Sms sms = smsMapper.toEntity(event);
         smsRepository.save(sms);
-
         smsCache.invalidate();
     }
 

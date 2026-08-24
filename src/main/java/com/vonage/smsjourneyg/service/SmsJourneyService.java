@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.service;
 
+import com.vonage.smsjourneyg.config.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
@@ -23,8 +24,9 @@ public class SmsJourneyService {
     private final SmsJourneyRepository journeyRepository;
     private final SmsRepository smsRepository;
     private final SmsRoutingService routingService;
+    private final SmsJourneyCache smsJourneyCache;
 
-    @CacheEvict(value = "smsJourneys", key = "#smsId")
+    //@CacheEvict(value = "smsJourneys", key = "#smsId")
     public SmsJourneyDto createJourney(
             Long smsId,
             SmsJourneyDto request) {
@@ -72,12 +74,14 @@ public class SmsJourneyService {
                 smsId
         );
 
+        smsJourneyCache.invalidate(smsId);
+
         return convertToDto(savedJourney);
     }
 
 
     // Get all journeys belonging to an SMS
-    @Cacheable(value = "smsJourneys", key = "#smsId")
+    //@Cacheable(value = "smsJourneys", key = "#smsId")
     public List<SmsJourneyDto> getJourneysBySms(
             Long smsId) {
 
@@ -92,17 +96,13 @@ public class SmsJourneyService {
             );
         }
 
-        return journeyRepository
-                .findBySmsSmsId(smsId)
-                .stream()
-                .map(this::convertToDto)
-                .toList();
+        return smsJourneyCache.getJourneysBySmsId(smsId);
     }
 
 
     // Process a journey
     @Transactional
-    @CacheEvict(value = "smsJourneys", key = "#result")
+   // @CacheEvict(value = "smsJourneys", key = "#result")
     public Long processJourney(Long journeyId) {
 
         log.info(
@@ -181,6 +181,7 @@ public class SmsJourneyService {
 
         journeyRepository.save(journey);
         smsRepository.save(sms);
+        smsJourneyCache.invalidate(sms.getSmsId());
 
         return journey.getSms().getSmsId();
     }
