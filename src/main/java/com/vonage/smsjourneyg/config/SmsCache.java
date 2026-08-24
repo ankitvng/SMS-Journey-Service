@@ -25,7 +25,7 @@ public class SmsCache {
                 .expireAfterWrite(Duration.ofMinutes(10))
                 .build(key -> {
                     log.info("Cache miss. Fetching SMS from database");
-                    List<Sms> smsList = smsRepository.findAllByDeletedAtIsNull();
+                    List<Sms> smsList = smsRepository.findAllByDeletedIsFalse();
                     return smsList.stream()
                             .map(this::convertToDto)
                             .toList();

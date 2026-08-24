@@ -24,8 +24,6 @@ public class SmsJourneyService {
     private final SmsRepository smsRepository;
     private final SmsRoutingService routingService;
 
-
-    // Create a journey for an SMS
     @CacheEvict(value = "smsJourneys", key = "#smsId")
     public SmsJourneyDto createJourney(
             Long smsId,
@@ -36,7 +34,7 @@ public class SmsJourneyService {
                 smsId
         );
 
-        Sms sms = smsRepository.findById(smsId)
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId)
                 .orElseThrow(() ->
                         new RuntimeException(
                                 "SMS not found: " + smsId
@@ -44,7 +42,6 @@ public class SmsJourneyService {
                 );
 
         SmsJourney journey = new SmsJourney();
-
         journey.setSms(sms);
         journey.setCampaignName(
                 request.getCampaignName()
@@ -89,7 +86,7 @@ public class SmsJourneyService {
                 smsId
         );
 
-        if (!smsRepository.existsById(smsId)) {
+        if (!smsRepository.existsBySmsIdAndDeletedIsFalse(smsId)) {
             throw new RuntimeException(
                     "SMS not found: " + smsId
             );

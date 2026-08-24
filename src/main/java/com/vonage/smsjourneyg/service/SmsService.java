@@ -1,6 +1,7 @@
 package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.config.SmsCache;
+import com.vonage.smsjourneyg.dto.SmsReceivedEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +56,7 @@ public class SmsService {
     public SmsResponseDto getSms(Long smsId) {
         log.info("Fetching SMS {}", smsId);
 
-        Sms sms = smsRepository.findBySmsIdAndDeletedAtIsNull(smsId)
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId)
                 .orElseThrow(() -> new SmsNotFoundException(smsId));
 
         return convertToDto(sms);
@@ -80,13 +82,57 @@ public class SmsService {
     public void deleteSms(Long smsId) {
         log.info("Soft deleting SMS {}", smsId);
 
-        Sms sms = smsRepository.findBySmsIdAndDeletedAtIsNull(smsId)
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId)
                 .orElseThrow(() -> new SmsNotFoundException(smsId));
 
-        sms.setDeletedAt(LocalDateTime.now());
+        sms.setDeleted(true);
         smsRepository.save(sms);
 
         log.info("SMS {} soft deleted successfully", smsId);
+
+        smsCache.invalidate();
+    }
+
+    public void processIncomingSms(
+            SmsReceivedEvent event) {
+
+        Optional<Sms> existingSms =
+                smsRepository
+                        .findByExternalSmsId(
+                                event.getSmsId()
+                        );
+
+        if (existingSms.isPresent()) {
+
+            log.info(
+                    "SMS {} already exists. Ignoring duplicate event.",
+                    event.getSmsId()
+            );
+
+            return;
+        }
+
+        Sms sms = new Sms();
+
+        sms.setExternalSmsId(
+                String.valueOf(event.getSmsId())
+        );
+
+        sms.setRecipient(
+                event.getRecipient()
+        );
+
+        sms.setMessage(
+                event.getMessage()
+        );
+
+        sms.setStatus(SmsStatus.SCHEDULED);
+
+        sms.setCreatedAt(
+                event.getReceivedAt()
+        );
+
+        smsRepository.save(sms);
 
         smsCache.invalidate();
     }

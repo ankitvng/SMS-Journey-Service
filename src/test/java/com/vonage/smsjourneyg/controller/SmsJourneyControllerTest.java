@@ -1,14 +1,13 @@
 package com.vonage.smsjourneyg.controller;
 
-
+import com.vonage.smsjourneyg.config.CacheConfig;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.service.SmsJourneyService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,9 +15,10 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(SmsJourneyController.class)
+@Import(CacheConfig.class)
 class SmsJourneyControllerTest {
 
     @Autowired
@@ -107,14 +108,32 @@ class SmsJourneyControllerTest {
     }
 
     @Test
+    void shouldReturnEmptyListWhenNoJourneysExist() throws Exception {
+        when(journeyService.getJourneysBySms(100L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/sms/{smsId}/journeys", 100L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
     void shouldProcessJourney() throws Exception {
         Long journeyId = 1L;
 
-        doNothing().when(journeyService).processJourney(journeyId);
+        when(journeyService.processJourney(journeyId)).thenReturn(100L);
 
         mockMvc.perform(
                         post("/api/sms/journeys/{journeyId}/process", journeyId)
                 )
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorWhenJourneyProcessingFails() throws Exception {
+        Long journeyId = 1L;
+        doThrow(new RuntimeException("Journey not found: 1")).when(journeyService).processJourney(journeyId);
+
+        mockMvc.perform(post("/api/sms/journeys/{journeyId}/process", journeyId))
+                .andExpect(status().isInternalServerError());
     }
 }

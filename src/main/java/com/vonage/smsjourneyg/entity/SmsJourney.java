@@ -20,7 +20,7 @@ public class SmsJourney {
     private String fallbackRoute;
     private double cost;
 
-    @Enumerated
+    @Enumerated(EnumType.STRING)
     private SmsStatus status = SmsStatus.SCHEDULED;
 
     private LocalDateTime scheduledTime;

@@ -8,9 +8,11 @@ import java.util.Optional;
 
 
 public interface SmsRepository extends JpaRepository<Sms, Long> {
-    List<Sms> findAllByDeletedAtIsNull();
+    List<Sms> findAllByDeletedIsFalse();
 
-    Optional<Sms> findBySmsIdAndDeletedAtIsNull(Long smsId);
+    Optional<Sms> findBySmsIdAndDeletedIsFalse(Long smsId);
 
-    boolean existsBySmsIdAndDeletedAtIsNull(Long smsId);
+    boolean existsBySmsIdAndDeletedIsFalse(Long smsId);
+
+    Optional<Sms> findByExternalSmsId(String smsId);
 }

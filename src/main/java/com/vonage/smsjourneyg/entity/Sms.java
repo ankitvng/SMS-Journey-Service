@@ -17,6 +17,9 @@ public class Sms {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long smsId;
 
+    @Column(unique = true)
+    private String externalSmsId;
+
     private String recipient;
 
     @Column(columnDefinition = "TEXT")
@@ -25,7 +28,7 @@ public class Sms {
     @Enumerated(EnumType.STRING)
     private SmsStatus status;
 
-    private LocalDateTime deletedAt;
+    private Boolean deleted;
 
     private LocalDateTime createdAt;
 

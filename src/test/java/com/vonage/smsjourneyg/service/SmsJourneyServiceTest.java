@@ -72,7 +72,7 @@ class SmsJourneyServiceTest {
 
     @Test
     void createJourney_WhenSmsExists_ShouldCreateAndReturnDto() {
-        when(smsRepository.findById(100L)).thenReturn(Optional.of(sms));
+        when(smsRepository.findBySmsIdAndDeletedIsFalse(100L)).thenReturn(Optional.of(sms));
         when(journeyRepository.save(any(SmsJourney.class))).thenReturn(journey);
 
         SmsJourneyDto result = journeyService.createJourney(100L, requestDto);
@@ -87,13 +87,13 @@ class SmsJourneyServiceTest {
         assertEquals(SmsStatus.SCHEDULED, result.getStatus());
         assertEquals(LocalDateTime.of(2026, 8, 17, 12, 0), result.getScheduledTime());
 
-        verify(smsRepository, times(1)).findById(100L);
+        verify(smsRepository, times(1)).findBySmsIdAndDeletedIsFalse(100L);
         verify(journeyRepository, times(1)).save(any(SmsJourney.class));
     }
 
     @Test
     void createJourney_WhenSmsDoesNotExist_ShouldThrowRuntimeException() {
-        when(smsRepository.findById(100L)).thenReturn(Optional.empty());
+        when(smsRepository.findBySmsIdAndDeletedIsFalse(100L)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -101,7 +101,7 @@ class SmsJourneyServiceTest {
         );
 
         assertEquals("SMS not found: 100", exception.getMessage());
-        verify(smsRepository, times(1)).findById(100L);
+        verify(smsRepository, times(1)).findBySmsIdAndDeletedIsFalse(100L);
         verify(journeyRepository, never()).save(any());
     }
 
@@ -109,7 +109,7 @@ class SmsJourneyServiceTest {
 
     @Test
     void getJourneysBySms_WhenSmsExists_ShouldReturnJourneyList() {
-        when(smsRepository.existsById(100L)).thenReturn(true);
+        when(smsRepository.existsBySmsIdAndDeletedIsFalse(100L)).thenReturn(true);
         when(journeyRepository.findBySmsSmsId(100L)).thenReturn(List.of(journey));
 
         List<SmsJourneyDto> result = journeyService.getJourneysBySms(100L);
@@ -119,13 +119,13 @@ class SmsJourneyServiceTest {
         assertEquals(1L, result.get(0).getId());
         assertEquals("Summer Promo", result.get(0).getCampaignName());
 
-        verify(smsRepository, times(1)).existsById(100L);
+        verify(smsRepository, times(1)).existsBySmsIdAndDeletedIsFalse(100L);
         verify(journeyRepository, times(1)).findBySmsSmsId(100L);
     }
 
     @Test
     void getJourneysBySms_WhenSmsDoesNotExist_ShouldThrowRuntimeException() {
-        when(smsRepository.existsById(100L)).thenReturn(false);
+        when(smsRepository.existsBySmsIdAndDeletedIsFalse(100L)).thenReturn(false);
 
         RuntimeException exception = assertThrows(
                 RuntimeException.class,
@@ -133,8 +133,20 @@ class SmsJourneyServiceTest {
         );
 
         assertEquals("SMS not found: 100", exception.getMessage());
-        verify(smsRepository, times(1)).existsById(100L);
+        verify(smsRepository, times(1)).existsBySmsIdAndDeletedIsFalse(100L);
         verify(journeyRepository, never()).findBySmsSmsId(anyLong());
+    }
+
+    @Test
+    void getJourneysBySms_WhenSmsExistsButHasNoJourneys_ShouldReturnEmptyList() {
+        when(smsRepository.existsBySmsIdAndDeletedIsFalse(100L)).thenReturn(true);
+        when(journeyRepository.findBySmsSmsId(100L)).thenReturn(List.of());
+
+        List<SmsJourneyDto> result = journeyService.getJourneysBySms(100L);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(journeyRepository, times(1)).findBySmsSmsId(100L);
     }
 
     // --- processJourney Tests ---

@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,7 +33,7 @@ class SmsCacheTest {
     @Test
     void getAllSms_onCacheMiss_loadsFromRepository() {
         Sms sms = buildSms(1L, "Alice", "Hello");
-        when(smsRepository.findAllByDeletedAtIsNull())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(sms));
 
         List<SmsResponseDto> result = smsCache.getAllSms();
@@ -40,12 +41,12 @@ class SmsCacheTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getSmsId()).isEqualTo(1L);
         assertThat(result.get(0).getRecipient()).isEqualTo("Alice");
-        verify(smsRepository, times(1)).findAllByDeletedAtIsNull();
+        verify(smsRepository, times(1)).findAllByDeletedIsFalse();
     }
 
     @Test
     void getAllSms_onSubsequentCalls_doesNotHitRepositoryAgain() {
-        when(smsRepository.findAllByDeletedAtIsNull())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(buildSms(1L, "Alice", "Hello")));
 
         smsCache.getAllSms();
@@ -53,12 +54,12 @@ class SmsCacheTest {
         smsCache.getAllSms();
 
         // repository should only be queried once — the rest are cache hits
-        verify(smsRepository, times(1)).findAllByDeletedAtIsNull();
+        verify(smsRepository, times(1)).findAllByDeletedIsFalse();
     }
 
     @Test
     void invalidate_forcesNextGetAllSms_toReloadFromRepository() {
-        when(smsRepository.findAllByDeletedAtIsNull())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(buildSms(1L, "Alice", "Hello")))
                 .thenReturn(List.of(
                         buildSms(1L, "Alice", "Hello"),
@@ -73,24 +74,24 @@ class SmsCacheTest {
         List<SmsResponseDto> secondCall = smsCache.getAllSms();
         assertThat(secondCall).hasSize(2);
 
-        verify(smsRepository, times(2)).findAllByDeletedAtIsNull();
+        verify(smsRepository, times(2)).findAllByDeletedIsFalse();
     }
 
     @Test
     void warmUpCache_populatesCache_beforeAnyGetAllSmsCall() {
-        when(smsRepository.findAllByDeletedAtIsNull())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(buildSms(1L, "Alice", "Hello")));
 
         smsCache.warmUpCache();
 
         // repository already hit once during warm-up
-        verify(smsRepository, times(1)).findAllByDeletedAtIsNull();
+        verify(smsRepository, times(1)).findAllByDeletedIsFalse();
 
         List<SmsResponseDto> result = smsCache.getAllSms();
 
         assertThat(result).hasSize(1);
         // still only 1 call total — getAllSms() was served from the warm cache
-        verify(smsRepository, times(1)).findAllByDeletedAtIsNull();
+        verify(smsRepository, times(1)).findAllByDeletedIsFalse();
     }
 
     @Test
@@ -103,7 +104,7 @@ class SmsCacheTest {
         sms.setStatus(SmsStatus.CREATED);
         sms.setCreatedAt(now);
 
-        when(smsRepository.findAllByDeletedAtIsNull())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(sms));
 
         SmsResponseDto dto = smsCache.getAllSms().get(0);
@@ -113,6 +114,81 @@ class SmsCacheTest {
         assertThat(dto.getMessage()).isEqualTo("Test message");
         assertThat(dto.getStatus()).isEqualTo(SmsStatus.CREATED);
         assertThat(dto.getCreatedAt()).isEqualTo(now);
+    }
+
+    @Test
+    void getAllSms_whenRepositoryReturnsEmptyList_returnsEmptyCacheResult() {
+        when(smsRepository.findAllByDeletedIsFalse()).thenReturn(List.of());
+
+        List<SmsResponseDto> result = smsCache.getAllSms();
+
+        assertThat(result).isEmpty();
+        verify(smsRepository, times(1)).findAllByDeletedIsFalse();
+    }
+
+    @Test
+    void firstCallShouldFetchFromRepositoryAndSecondCallShouldUseCache() {
+
+        // Arrange
+        Sms sms = new Sms();
+
+        sms.setSmsId(1L);
+        sms.setRecipient("+919876543210");
+        sms.setMessage("Hello");
+        sms.setStatus(SmsStatus.SCHEDULED);
+
+        when(smsRepository.findAll())
+                .thenReturn(List.of(sms));
+
+        // Act
+        List<SmsResponseDto> firstCall =
+                smsCache.getAllSms();
+
+        List<SmsResponseDto> secondCall =
+                smsCache.getAllSms();
+
+        // Assert
+        assertEquals(1, firstCall.size());
+        assertEquals(1, secondCall.size());
+
+        assertEquals(
+                firstCall,
+                secondCall
+        );
+
+        // Repository must only be called once
+        verify(
+                smsRepository,
+                times(1)
+        ).findAll();
+    }
+
+    @Test
+    void shouldCallRepositoryAgainAfterCacheInvalidation() {
+
+        // Arrange
+        Sms sms = new Sms();
+
+        sms.setSmsId(1L);
+        sms.setRecipient("+919876543210");
+        sms.setMessage("Hello");
+        sms.setStatus(SmsStatus.SCHEDULED);
+
+        when(smsRepository.findAll())
+                .thenReturn(List.of(sms));
+
+        // Act
+        smsCache.getAllSms();
+
+        smsCache.invalidate();
+
+        smsCache.getAllSms();
+
+        // Assert
+        verify(
+                smsRepository,
+                times(2)
+        ).findAll();
     }
 
     private Sms buildSms(Long id, String recipient, String message) {
