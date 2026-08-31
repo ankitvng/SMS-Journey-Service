@@ -26,7 +26,8 @@ class SmsJourneyCacheTest {
     void setUp() {
 
         smsJourneyCache =
-                new SmsJourneyCache(repository);
+                new SmsJourneyCache(repository,
+                        java.time.Duration.ofMinutes(10));
     }
 
     @Test

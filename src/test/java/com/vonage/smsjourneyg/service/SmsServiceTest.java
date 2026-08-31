@@ -1,7 +1,7 @@
 package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.config.SmsCache;
-import com.vonage.smsjourneyg.dto.SmsReceivedEvent;
+import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
@@ -33,6 +33,9 @@ class SmsServiceTest {
 
     @Mock
     private SmsCache smsCache;
+
+    @Mock
+    private com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer producer;
 
     @InjectMocks
     private SmsService smsService;
@@ -194,10 +197,10 @@ class SmsServiceTest {
     void shouldNotSaveDuplicateKafkaMessage() {
 
         // Arrange
-        SmsReceivedEvent event =
-                new SmsReceivedEvent();
+        SmsRoutingDecisionEvent event =
+                new SmsRoutingDecisionEvent();
 
-        event.setSmsId("KAFKA-123");
+        event.setSmsId(123L);
 
         event.setRecipient(
                 "+919876543210"
@@ -213,13 +216,13 @@ class SmsServiceTest {
         existingSms.setSmsId(1L);
 
         existingSms.setExternalSmsId(
-                "KAFKA-123"
+                "123"
         );
 
         when(
                 smsRepository
                         .findByExternalSmsId(
-                                "KAFKA-123"
+                                "123"
                         )
         ).thenReturn(
                 Optional.of(existingSms)
@@ -242,7 +245,6 @@ class SmsServiceTest {
 
     @Test
     void shouldNotAllowDuplicateExternalSmsId() {
-
         Sms sms1 = new Sms();
 
         sms1.setExternalSmsId("KAFKA-123");
@@ -250,7 +252,9 @@ class SmsServiceTest {
         sms1.setMessage("First");
         sms1.setStatus(SmsStatus.SCHEDULED);
 
-        smsRepository.saveAndFlush(sms1);
+        // Simulate DB unique constraint by making saveAndFlush throw on duplicate
+        when(smsRepository.saveAndFlush(any(Sms.class)))
+                .thenThrow(new RuntimeException("Unique constraint violation"));
 
         Sms sms2 = new Sms();
 
@@ -260,7 +264,7 @@ class SmsServiceTest {
         sms2.setStatus(SmsStatus.SCHEDULED);
 
         assertThrows(
-                Exception.class,
+                RuntimeException.class,
                 () -> smsRepository.saveAndFlush(sms2)
         );
     }

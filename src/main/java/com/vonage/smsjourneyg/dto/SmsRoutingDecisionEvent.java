@@ -5,9 +5,9 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class SmsReceivedEvent {
+public class SmsRoutingDecisionEvent {
 
-    private String smsId;
+    private Long smsId;
 
     private String recipient;
 

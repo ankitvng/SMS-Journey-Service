@@ -1,12 +1,13 @@
 package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.config.SmsCache;
-import com.vonage.smsjourneyg.dto.SmsReceivedEvent;
+import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
+import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
 import com.vonage.smsjourneyg.mapper.SmsMapper;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class SmsService {
     private final SmsRepository smsRepository;
     private final SmsCache smsCache;
     private final SmsMapper smsMapper;
+    private final SmsJourneyKafkaProducer producer;
 
     public List<SmsResponseDto> getAllSms() {
         log.info("Getting all SMS");
@@ -77,6 +79,12 @@ public class SmsService {
         log.info("SMS {} created successfully", savedSms.getSmsId());
 
         smsCache.invalidate();
+        SmsRoutingDecisionEvent event = new SmsRoutingDecisionEvent();
+        event.setSmsId(savedSms.getSmsId());
+        event.setMessage(savedSms.getMessage());
+        event.setRecipient(savedSms.getRecipient());
+
+        producer.publish(event);
 
         return convertToDto(savedSms);
     }
@@ -95,9 +103,9 @@ public class SmsService {
         smsCache.invalidate();
     }
 
-    public void processIncomingSms(SmsReceivedEvent event) {
+    public void processIncomingSms(SmsRoutingDecisionEvent event) {
 
-        Optional<Sms> existingSms = smsRepository.findByExternalSmsId(event.getSmsId());
+        Optional<Sms> existingSms = smsRepository.findByExternalSmsId(String.valueOf(event.getSmsId()));
 
         if(existingSms.isPresent()){
             log.info("SMS with external ID {} already exists. Skipping creation.", event.getSmsId());

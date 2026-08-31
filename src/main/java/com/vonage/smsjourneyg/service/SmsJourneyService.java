@@ -2,15 +2,15 @@ package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.config.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
+import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -79,9 +79,35 @@ public class SmsJourneyService {
         return convertToDto(savedJourney);
     }
 
+    @Transactional
+    public void createAndProcessJourney(
+            SmsRoutingDecisionEvent event) {
 
-    // Get all journeys belonging to an SMS
-    //@Cacheable(value = "smsJourneys", key = "#smsId")
+        Sms sms =
+                smsRepository.findById(
+                        event.getSmsId()
+                ).orElseThrow(() ->
+                        new SmsNotFoundException(
+                                event.getSmsId()
+                        )
+                );
+
+        SmsJourney journey =
+                new SmsJourney();
+
+        journey.setSms(sms);
+        journey.setRoutingStep("PRIMARY");
+        journey.setStatus(SmsStatus.SCHEDULED);
+
+        SmsJourney savedJourney =
+                journeyRepository.save(journey);
+
+        smsJourneyCache.invalidate(sms.getSmsId());
+
+        processJourney(savedJourney.getId());
+    }
+
+
     public List<SmsJourneyDto> getJourneysBySms(
             Long smsId) {
 
@@ -100,9 +126,7 @@ public class SmsJourneyService {
     }
 
 
-    // Process a journey
     @Transactional
-   // @CacheEvict(value = "smsJourneys", key = "#result")
     public Long processJourney(Long journeyId) {
 
         log.info(
@@ -114,14 +138,15 @@ public class SmsJourneyService {
                 journeyRepository.findById(journeyId)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Journey not found: "
-                                                + journeyId
+                                        "Journey not found: " + journeyId
                                 )
                         );
 
         Sms sms = journey.getSms();
 
-        // Try primary route
+        // Mark as processing
+        journey.setStatus(SmsStatus.SCHEDULED);
+
         boolean primarySuccess =
                 routingService.sendSms(
                         journey.getPrimaryRoute(),
@@ -131,7 +156,6 @@ public class SmsJourneyService {
         if (primarySuccess) {
 
             journey.setStatus(SmsStatus.SENT);
-
             sms.setStatus(SmsStatus.SENT);
 
             log.info(
@@ -143,11 +167,12 @@ public class SmsJourneyService {
         } else {
 
             log.warn(
-                    "Primary route failed for SMS {}, trying fallback",
-                    sms.getSmsId()
+                    "Primary route {} failed for SMS {}. Trying fallback route {}",
+                    journey.getPrimaryRoute(),
+                    sms.getSmsId(),
+                    journey.getFallbackRoute()
             );
 
-            // Try fallback
             boolean fallbackSuccess =
                     routingService.sendSms(
                             journey.getFallbackRoute(),
@@ -157,7 +182,6 @@ public class SmsJourneyService {
             if (fallbackSuccess) {
 
                 journey.setStatus(SmsStatus.SENT);
-
                 sms.setStatus(SmsStatus.SENT);
 
                 log.info(
@@ -169,21 +193,27 @@ public class SmsJourneyService {
             } else {
 
                 journey.setStatus(SmsStatus.FAILED);
-
                 sms.setStatus(SmsStatus.FAILED);
 
                 log.error(
-                        "SMS {} failed through both routes",
-                        sms.getSmsId()
+                        "SMS {} failed through both primary {} and fallback {} routes",
+                        sms.getSmsId(),
+                        journey.getPrimaryRoute(),
+                        journey.getFallbackRoute()
                 );
             }
         }
 
+        // Persist changes
         journeyRepository.save(journey);
         smsRepository.save(sms);
-        smsJourneyCache.invalidate(sms.getSmsId());
 
-        return journey.getSms().getSmsId();
+        // Database data changed, invalidate cache
+        smsJourneyCache.invalidate(
+                sms.getSmsId()
+        );
+
+        return sms.getSmsId();
     }
 
 
@@ -194,26 +224,19 @@ public class SmsJourneyService {
 
         dto.setId(journey.getId());
         dto.setCampaignName(
-                journey.getCampaignName()
-        );
+                journey.getCampaignName());
         dto.setRoutingStep(
-                journey.getRoutingStep()
-        );
+                journey.getRoutingStep());
         dto.setPrimaryRoute(
-                journey.getPrimaryRoute()
-        );
+                journey.getPrimaryRoute());
         dto.setFallbackRoute(
-                journey.getFallbackRoute()
-        );
+                journey.getFallbackRoute());
         dto.setCost(
-                journey.getCost()
-        );
+                journey.getCost());
         dto.setStatus(
-                journey.getStatus()
-        );
+                journey.getStatus());
         dto.setScheduledTime(
-                journey.getScheduledTime()
-        );
+                journey.getScheduledTime());
 
         return dto;
     }

@@ -6,6 +6,7 @@ import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -18,11 +19,13 @@ public class SmsJourneyCache {
     private final LoadingCache<Long, List<SmsJourneyDto>> cache;
 
     public SmsJourneyCache(
-            SmsJourneyRepository smsJourneyRepository) {
+            SmsJourneyRepository smsJourneyRepository,
+            @Value("${sms-journey.cache.expire-after-write}")
+            Duration expireAfterWrite) {
 
         this.cache = Caffeine.newBuilder()
                 .maximumSize(1000)
-                .expireAfterWrite(Duration.ofMinutes(10))
+                .expireAfterWrite(expireAfterWrite)
                 .build(smsId -> {
 
                     log.info(

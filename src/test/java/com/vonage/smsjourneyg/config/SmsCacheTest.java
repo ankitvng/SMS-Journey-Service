@@ -27,7 +27,7 @@ class SmsCacheTest {
 
     @BeforeEach
     void setUp() {
-        smsCache = new SmsCache(smsRepository);
+        smsCache = new SmsCache(smsRepository, java.time.Duration.ofMinutes(10));
     }
 
     @Test
@@ -137,7 +137,7 @@ class SmsCacheTest {
         sms.setMessage("Hello");
         sms.setStatus(SmsStatus.SCHEDULED);
 
-        when(smsRepository.findAll())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(sms));
 
         // Act
@@ -160,7 +160,7 @@ class SmsCacheTest {
         verify(
                 smsRepository,
                 times(1)
-        ).findAll();
+        ).findAllByDeletedIsFalse();
     }
 
     @Test
@@ -174,7 +174,7 @@ class SmsCacheTest {
         sms.setMessage("Hello");
         sms.setStatus(SmsStatus.SCHEDULED);
 
-        when(smsRepository.findAll())
+        when(smsRepository.findAllByDeletedIsFalse())
                 .thenReturn(List.of(sms));
 
         // Act
@@ -188,7 +188,7 @@ class SmsCacheTest {
         verify(
                 smsRepository,
                 times(2)
-        ).findAll();
+        ).findAllByDeletedIsFalse();
     }
 
     private Sms buildSms(Long id, String recipient, String message) {

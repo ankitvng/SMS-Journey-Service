@@ -1,6 +1,6 @@
 package com.vonage.smsjourneyg.kafka;
-import com.vonage.smsjourneyg.dto.SmsReceivedEvent;
-import com.vonage.smsjourneyg.service.SmsService;
+import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
+import com.vonage.smsjourneyg.service.SmsJourneyService;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -9,21 +9,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class SmsKafkaConsumerTest {
+class SmsJourneyKafkaConsumerTest {
 
     @Mock
-    private SmsService smsService;
+    private SmsJourneyService smsJourneyService;
 
     @InjectMocks
-    private SmsKafkaConsumer consumer;
+    private SmsJourneyKafkaConsumer consumer;
 
     @Test
     void shouldPassKafkaMessageToSmsService() {
 
-        SmsReceivedEvent event =
-                new SmsReceivedEvent();
+        SmsRoutingDecisionEvent event =
+                new SmsRoutingDecisionEvent();
 
-        event.setSmsId("101");
+        event.setSmsId(101L);
         event.setRecipient(
                 "+919876543210"
         );
@@ -31,7 +31,7 @@ class SmsKafkaConsumerTest {
 
         consumer.consume(event);
 
-        verify(smsService)
-                .processIncomingSms(event);
+        verify(smsJourneyService)
+                .createAndProcessJourney(event);
     }
 }

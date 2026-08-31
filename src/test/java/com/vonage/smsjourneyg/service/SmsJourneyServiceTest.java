@@ -33,6 +33,9 @@ class SmsJourneyServiceTest {
     @Mock
     private SmsRoutingService routingService;
 
+    @Mock
+    private com.vonage.smsjourneyg.config.SmsJourneyCache smsJourneyCache;
+
     @InjectMocks
     private SmsJourneyService journeyService;
 
@@ -110,7 +113,7 @@ class SmsJourneyServiceTest {
     @Test
     void getJourneysBySms_WhenSmsExists_ShouldReturnJourneyList() {
         when(smsRepository.existsBySmsIdAndDeletedIsFalse(100L)).thenReturn(true);
-        when(journeyRepository.findBySmsSmsId(100L)).thenReturn(List.of(journey));
+        when(smsJourneyCache.getJourneysBySmsId(100L)).thenReturn(List.of(convertToDto(journey)));
 
         List<SmsJourneyDto> result = journeyService.getJourneysBySms(100L);
 
@@ -120,7 +123,7 @@ class SmsJourneyServiceTest {
         assertEquals("Summer Promo", result.get(0).getCampaignName());
 
         verify(smsRepository, times(1)).existsBySmsIdAndDeletedIsFalse(100L);
-        verify(journeyRepository, times(1)).findBySmsSmsId(100L);
+        verify(smsJourneyCache, times(1)).getJourneysBySmsId(100L);
     }
 
     @Test
@@ -140,13 +143,13 @@ class SmsJourneyServiceTest {
     @Test
     void getJourneysBySms_WhenSmsExistsButHasNoJourneys_ShouldReturnEmptyList() {
         when(smsRepository.existsBySmsIdAndDeletedIsFalse(100L)).thenReturn(true);
-        when(journeyRepository.findBySmsSmsId(100L)).thenReturn(List.of());
+        when(smsJourneyCache.getJourneysBySmsId(100L)).thenReturn(List.of());
 
         List<SmsJourneyDto> result = journeyService.getJourneysBySms(100L);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(journeyRepository, times(1)).findBySmsSmsId(100L);
+        verify(smsJourneyCache, times(1)).getJourneysBySmsId(100L);
     }
 
     // --- processJourney Tests ---
@@ -215,5 +218,18 @@ class SmsJourneyServiceTest {
         verify(routingService, never()).sendSms(any(), any());
         verify(journeyRepository, never()).save(any());
         verify(smsRepository, never()).save(any());
+    }
+
+    private SmsJourneyDto convertToDto(SmsJourney journey) {
+        SmsJourneyDto dto = new SmsJourneyDto();
+        dto.setId(journey.getId());
+        dto.setCampaignName(journey.getCampaignName());
+        dto.setRoutingStep(journey.getRoutingStep());
+        dto.setPrimaryRoute(journey.getPrimaryRoute());
+        dto.setFallbackRoute(journey.getFallbackRoute());
+        dto.setCost(journey.getCost());
+        dto.setStatus(journey.getStatus());
+        dto.setScheduledTime(journey.getScheduledTime());
+        return dto;
     }
 }

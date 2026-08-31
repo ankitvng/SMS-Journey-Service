@@ -7,6 +7,7 @@ import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -18,11 +19,13 @@ public class SmsCache {
 
     private final LoadingCache<String, List<SmsResponseDto>> cache;
 
-    public SmsCache(SmsRepository smsRepository) {
+    public SmsCache(SmsRepository smsRepository,
+                        @Value("${sms-journey.cache.expire-after-write}")
+                        Duration expireAfterWrite) {
         this.cache = Caffeine
                 .newBuilder()
                 .maximumSize(1000)
-                .expireAfterWrite(Duration.ofMinutes(10))
+                .expireAfterWrite(expireAfterWrite)
                 .build(key -> {
                     log.info("Cache miss. Fetching SMS from database");
                     List<Sms> smsList = smsRepository.findAllByDeletedIsFalse();
