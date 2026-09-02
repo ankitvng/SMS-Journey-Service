@@ -8,4 +8,8 @@ import java.util.List;
 public interface SmsJourneyRepository extends JpaRepository<SmsJourney, Long> {
 
     List<SmsJourney> findBySmsSmsId(Long smsId);
+
+    void deleteBySmsSmsId(Long smsId);
+
+    void deleteBySmsId(Long smsId);
 }

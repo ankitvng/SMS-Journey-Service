@@ -9,4 +9,5 @@ public record ValidationErrorResponse(
         String message,
         LocalDateTime timestamp,
         Map<String, String> fieldErrors
-) {}
+) {
+}

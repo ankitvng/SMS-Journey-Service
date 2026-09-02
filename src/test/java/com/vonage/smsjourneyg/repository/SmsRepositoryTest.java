@@ -66,8 +66,7 @@ class SmsRepositoryTest {
         Sms saved = smsRepository.save(active);
 
         assertThat(smsRepository.findBySmsIdAndDeletedIsFalse(saved.getSmsId())).isPresent();
-        assertThat(smsRepository.findBySmsIdAndDeletedIsFalse(saved.getSmsId()).get().getMessage())
-                .isEqualTo("Active message");
+        assertThat(smsRepository.findBySmsIdAndDeletedIsFalse(saved.getSmsId()).get().getMessage()).isEqualTo("Active message");
     }
 
     @Test
@@ -98,49 +97,4 @@ class SmsRepositoryTest {
         assertThat(smsRepository.existsBySmsIdAndDeletedIsFalse(saved.getSmsId())).isTrue();
     }
 
-    @Test
-    void shouldFindSmsByExternalSmsId() {
-
-        // Arrange
-        Sms sms = new Sms();
-
-        sms.setExternalSmsId(
-                "KAFKA-123"
-        );
-
-        sms.setRecipient(
-                "+919876543210"
-        );
-
-        sms.setMessage(
-                "Hello"
-        );
-
-        sms.setStatus(
-                SmsStatus.SCHEDULED
-        );
-
-        Sms savedSms =
-                smsRepository.save(sms);
-
-        // Act
-        Optional<Sms> result =
-                smsRepository
-                        .findByExternalSmsId(
-                                "KAFKA-123"
-                        );
-
-        // Assert
-        assertTrue(result.isPresent());
-
-        assertEquals(
-                savedSms.getSmsId(),
-                result.get().getSmsId()
-        );
-
-        assertEquals(
-                "KAFKA-123",
-                result.get().getExternalSmsId()
-        );
-    }
 }

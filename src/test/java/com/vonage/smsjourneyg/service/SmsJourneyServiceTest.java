@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.service;
 
+import com.vonage.smsjourneyg.config.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
@@ -34,7 +35,7 @@ class SmsJourneyServiceTest {
     private SmsRoutingService routingService;
 
     @Mock
-    private com.vonage.smsjourneyg.config.SmsJourneyCache smsJourneyCache;
+    private SmsJourneyCache smsJourneyCache;
 
     @InjectMocks
     private SmsJourneyService journeyService;

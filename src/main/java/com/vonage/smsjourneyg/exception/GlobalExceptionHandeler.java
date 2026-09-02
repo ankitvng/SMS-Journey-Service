@@ -17,48 +17,28 @@ import java.util.Map;
 public class GlobalExceptionHandeler {
 
     @ExceptionHandler(SmsNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleSmsNotFound(
-            SmsNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleSmsNotFound(SmsNotFoundException ex) {
 
         log.warn("SMS not found: {}", ex.getMessage());
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "NOT_FOUND",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
+        ErrorResponse error = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", ex.getMessage(), LocalDateTime.now());
 
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(error);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ValidationErrorResponse> handleValidation(
-            MethodArgumentNotValidException ex) {
+    public ResponseEntity<ValidationErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
 
         Map<String, String> fieldErrors = new HashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.put(
-                    fieldError.getField(),
-                    fieldError.getDefaultMessage()
-            );
+            fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
         log.warn("Validation failed: {}", fieldErrors);
 
-        ValidationErrorResponse error = new ValidationErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_FAILED",
-                "One or more fields are invalid",
-                LocalDateTime.now(),
-                fieldErrors
-        );
+        ValidationErrorResponse error = new ValidationErrorResponse(HttpStatus.BAD_REQUEST.value(), "VALIDATION_FAILED", "One or more fields are invalid", LocalDateTime.now(), fieldErrors);
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(error);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     @ExceptionHandler(Exception.class)
@@ -66,15 +46,8 @@ public class GlobalExceptionHandeler {
 
         log.error("Unhandled exception", ex);
 
-        ErrorResponse error = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_ERROR",
-                "An unexpected error occurred",
-                LocalDateTime.now()
-        );
+        ErrorResponse error = new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "INTERNAL_ERROR", "An unexpected error occurred", LocalDateTime.now());
 
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

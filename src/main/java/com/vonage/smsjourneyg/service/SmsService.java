@@ -1,6 +1,7 @@
 package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.config.SmsCache;
+import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
@@ -9,6 +10,7 @@ import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
 import com.vonage.smsjourneyg.mapper.SmsMapper;
+import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,6 +33,7 @@ public class SmsService {
     private final SmsCache smsCache;
     private final SmsMapper smsMapper;
     private final SmsJourneyKafkaProducer producer;
+    private final SmsJourneyRepository journeyRepository;
 
     public List<SmsResponseDto> getAllSms() {
         log.info("Getting all SMS");
@@ -37,11 +41,7 @@ public class SmsService {
     }
 
     public Page<SmsResponseDto> getAllSms(Pageable pageable) {
-        log.info(
-                "Getting SMS page {} of size {}",
-                pageable.getPageNumber(),
-                pageable.getPageSize()
-        );
+        log.info("Getting SMS page {} of size {}", pageable.getPageNumber(), pageable.getPageSize());
 
         List<SmsResponseDto> allSms = smsCache.getAllSms();
 
@@ -60,8 +60,7 @@ public class SmsService {
     public SmsResponseDto getSms(Long smsId) {
         log.info("Fetching SMS {}", smsId);
 
-        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId)
-                .orElseThrow(() -> new SmsNotFoundException(smsId));
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new SmsNotFoundException(smsId));
 
         return convertToDto(sms);
     }
@@ -81,38 +80,34 @@ public class SmsService {
         smsCache.invalidate();
         SmsRoutingDecisionEvent event = new SmsRoutingDecisionEvent();
         event.setSmsId(savedSms.getSmsId());
-        event.setMessage(savedSms.getMessage());
-        event.setRecipient(savedSms.getRecipient());
+        
+        SmsJourneyDto journeyDto = new SmsJourneyDto();
+        journeyDto.setCampaignName("Message Campaign");
+        journeyDto.setRoutingStep("PRIMARY");
+        journeyDto.setPrimaryRoute("VONAGE");
+        journeyDto.setFallbackRoute("TWILIO");
+        journeyDto.setCost(0.05);
+        journeyDto.setStatus(SmsStatus.CREATED);
+
+        event.setSmsJourneyDto(journeyDto);
 
         producer.publish(event);
 
         return convertToDto(savedSms);
     }
 
+    @Transactional
     public void deleteSms(Long smsId) {
         log.info("Soft deleting SMS {}", smsId);
 
-        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId)
-                .orElseThrow(() -> new SmsNotFoundException(smsId));
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new SmsNotFoundException(smsId));
 
         sms.setDeleted(true);
         smsRepository.save(sms);
+        journeyRepository.deleteBySmsId(smsId);
 
         log.info("SMS {} soft deleted successfully", smsId);
 
-        smsCache.invalidate();
-    }
-
-    public void processIncomingSms(SmsRoutingDecisionEvent event) {
-
-        Optional<Sms> existingSms = smsRepository.findByExternalSmsId(String.valueOf(event.getSmsId()));
-
-        if(existingSms.isPresent()){
-            log.info("SMS with external ID {} already exists. Skipping creation.", event.getSmsId());
-            return;
-        }
-        Sms sms = smsMapper.toEntity(event);
-        smsRepository.save(sms);
         smsCache.invalidate();
     }
 

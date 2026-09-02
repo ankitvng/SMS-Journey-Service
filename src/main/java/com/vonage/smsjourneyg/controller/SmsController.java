@@ -19,19 +19,15 @@ public class SmsController {
     private final SmsService smsService;
 
     @PostMapping
-    public ResponseEntity<SmsResponseDto> createSms(
-            @Valid @RequestBody SmsRequestDto request) {
+    public ResponseEntity<SmsResponseDto> createSms(@Valid @RequestBody SmsRequestDto request) {
 
         SmsResponseDto response = smsService.createSms(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{smsId}")
-    public ResponseEntity<SmsResponseDto> getSms(
-            @PathVariable Long smsId) {
+    public ResponseEntity<SmsResponseDto> getSms(@PathVariable Long smsId) {
 
         SmsResponseDto response = smsService.getSms(smsId);
 
@@ -39,17 +35,13 @@ public class SmsController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<SmsResponseDto>> getAllSms(
-            Pageable pageable) {
+    public ResponseEntity<Page<SmsResponseDto>> getAllSms(Pageable pageable) {
 
-        return ResponseEntity.ok(
-                smsService.getAllSms(pageable)
-        );
+        return ResponseEntity.ok(smsService.getAllSms(pageable));
     }
 
     @DeleteMapping("/{smsId}")
-    public ResponseEntity<Void> deleteSms(
-            @PathVariable Long smsId) {
+    public ResponseEntity<Void> deleteSms(@PathVariable Long smsId) {
 
         smsService.deleteSms(smsId);
 

@@ -16,20 +16,12 @@ public class SmsJourneyKafkaConsumer {
 
     private final SmsJourneyService smsJourneyService;
 
-    @KafkaListener(
-            topics = "${app.kafka.sms-topic}",
-            groupId = "${app.kafka.group-id}"
-    )
+    @KafkaListener(topics = "${app.kafka.sms-topic}", groupId = "${app.kafka.group-id}")
     public void consume(SmsRoutingDecisionEvent event) {
 
-        log.info(
-                "Received SMS {} for journey processing",
-                event.getSmsId()
-        );
+        log.info("Received SMS {} for journey processing", event.getSmsId());
 
-        smsJourneyService.createAndProcessJourney(
-                event
-        );
+        smsJourneyService.createJourneyfromEvent(event);
     }
 
 }

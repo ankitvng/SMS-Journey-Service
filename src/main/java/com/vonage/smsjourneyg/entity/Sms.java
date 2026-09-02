@@ -17,9 +17,6 @@ public class Sms {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long smsId;
 
-    @Column(unique = true)
-    private String externalSmsId;
-
     private String recipient;
 
     @Column(columnDefinition = "TEXT")

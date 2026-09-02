@@ -19,20 +19,12 @@ public class SmsCache {
 
     private final LoadingCache<String, List<SmsResponseDto>> cache;
 
-    public SmsCache(SmsRepository smsRepository,
-                        @Value("${sms-journey.cache.expire-after-write}")
-                        Duration expireAfterWrite) {
-        this.cache = Caffeine
-                .newBuilder()
-                .maximumSize(1000)
-                .expireAfterWrite(expireAfterWrite)
-                .build(key -> {
-                    log.info("Cache miss. Fetching SMS from database");
-                    List<Sms> smsList = smsRepository.findAllByDeletedIsFalse();
-                    return smsList.stream()
-                            .map(this::convertToDto)
-                            .toList();
-                });
+    public SmsCache(SmsRepository smsRepository, @Value("${sms-journey.cache.expire-after-write}") Duration expireAfterWrite) {
+        this.cache = Caffeine.newBuilder().maximumSize(1000).expireAfterWrite(expireAfterWrite).build(key -> {
+            log.info("Cache miss. Fetching SMS from database");
+            List<Sms> smsList = smsRepository.findAllByDeletedIsFalse();
+            return smsList.stream().map(this::convertToDto).toList();
+        });
     }
 
     @PostConstruct

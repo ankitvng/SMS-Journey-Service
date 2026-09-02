@@ -9,9 +9,5 @@ public class SmsRoutingDecisionEvent {
 
     private Long smsId;
 
-    private String recipient;
-
-    private String message;
-
-    private LocalDateTime receivedAt;
+    private SmsJourneyDto smsJourneyDto;
 }

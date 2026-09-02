@@ -7,6 +7,9 @@ import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
+import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
+import com.vonage.smsjourneyg.mapper.SmsMapper;
+import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +38,13 @@ class SmsServiceTest {
     private SmsCache smsCache;
 
     @Mock
-    private com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer producer;
+    private SmsJourneyKafkaProducer producer;
+
+    @Mock
+    private SmsMapper smsMapper;
+
+    @Mock
+    private SmsJourneyRepository journeyRepository;
 
     @InjectMocks
     private SmsService smsService;
@@ -194,81 +203,19 @@ class SmsServiceTest {
     }
 
     @Test
-    void shouldNotSaveDuplicateKafkaMessage() {
+    void deleteSms_WhenJourneyDeleteFails_ShouldNotInvalidateCacheAndBubbleUpException() {
+        when(smsRepository.findBySmsIdAndDeletedIsFalse(1L)).thenReturn(Optional.of(sms));
+        doThrow(new RuntimeException("Journey delete failed")).when(journeyRepository).deleteBySmsSmsId(1L);
 
-        // Arrange
-        SmsRoutingDecisionEvent event =
-                new SmsRoutingDecisionEvent();
-
-        event.setSmsId(123L);
-
-        event.setRecipient(
-                "+919876543210"
-        );
-
-        event.setMessage(
-                "Hello"
-        );
-
-        Sms existingSms =
-                new Sms();
-
-        existingSms.setSmsId(1L);
-
-        existingSms.setExternalSmsId(
-                "123"
-        );
-
-        when(
-                smsRepository
-                        .findByExternalSmsId(
-                                "123"
-                        )
-        ).thenReturn(
-                Optional.of(existingSms)
-        );
-
-        // Act
-        smsService.processIncomingSms(event);
-
-        // Assert
-        verify(
-                smsRepository,
-                never()
-        ).save(any(Sms.class));
-
-        verify(
-                smsCache,
-                never()
-        ).invalidate();
-    }
-
-    @Test
-    void shouldNotAllowDuplicateExternalSmsId() {
-        Sms sms1 = new Sms();
-
-        sms1.setExternalSmsId("KAFKA-123");
-        sms1.setRecipient("+919876543210");
-        sms1.setMessage("First");
-        sms1.setStatus(SmsStatus.SCHEDULED);
-
-        // Simulate DB unique constraint by making saveAndFlush throw on duplicate
-        when(smsRepository.saveAndFlush(any(Sms.class)))
-                .thenThrow(new RuntimeException("Unique constraint violation"));
-
-        Sms sms2 = new Sms();
-
-        sms2.setExternalSmsId("KAFKA-123");
-        sms2.setRecipient("+919812345678");
-        sms2.setMessage("Second");
-        sms2.setStatus(SmsStatus.SCHEDULED);
-
-        assertThrows(
+        RuntimeException exception = assertThrows(
                 RuntimeException.class,
-                () -> smsRepository.saveAndFlush(sms2)
+                () -> smsService.deleteSms(1L)
         );
-    }
 
+        assertEquals("Journey delete failed", exception.getMessage());
+        verify(smsRepository, times(1)).save(sms);
+        verify(smsCache, never()).invalidate();
+    }
 
     private SmsResponseDto toDto(Sms sms) {
         SmsResponseDto dto = new SmsResponseDto();

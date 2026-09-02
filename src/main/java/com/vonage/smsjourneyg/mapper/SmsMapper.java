@@ -11,11 +11,8 @@ public class SmsMapper {
     public Sms toEntity(SmsRoutingDecisionEvent event) {
         if (event == null) return null;
         Sms sms = new Sms();
-        sms.setExternalSmsId(String.valueOf(event.getSmsId()));
-        sms.setRecipient(event.getRecipient());
-        sms.setMessage(event.getMessage());
-        sms.setCreatedAt(event.getReceivedAt());
         sms.setStatus(SmsStatus.SCHEDULED);
+
         return sms;
     }
 }
