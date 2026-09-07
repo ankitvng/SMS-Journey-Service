@@ -1,73 +1,144 @@
 package com.vonage.smsjourneyg.service;
 
+import com.vonage.smsjourneyg.config.SmsJourneyCache;
+import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
+import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
+import com.vonage.smsjourneyg.enums.SmsStatus;
+import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.vonage.smsjourneyg.repository.SmsRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class SmsJourneyService {
 
-    @Autowired
-    private SmsJourneyRepository repository;
+    private final SmsJourneyRepository journeyRepository;
+    private final SmsRepository smsRepository;
+    private final SmsRoutingService routingService;
+    private final SmsJourneyCache smsJourneyCache;
 
-    public SmsJourney createJourney(SmsJourney journey) {
-        calculateMetrics(journey);
-        return repository.save(journey);
+
+    public SmsJourneyDto createJourney(Long smsId, SmsJourneyDto request) {
+
+        log.info("Creating journey for SMS {}", smsId);
+
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new RuntimeException("SMS not found: " + smsId));
+
+        SmsJourney journey = new SmsJourney();
+        journey.setSms(sms);
+        journey.setCampaignName(request.getCampaignName());
+        journey.setRoutingStep(request.getRoutingStep());
+        journey.setPrimaryRoute(request.getPrimaryRoute());
+        journey.setFallbackRoute(request.getFallbackRoute());
+        journey.setCost(request.getCost());
+        journey.setScheduledTime(request.getScheduledTime());
+        journey.setStatus(SmsStatus.SCHEDULED);
+
+        SmsJourney savedJourney = journeyRepository.save(journey);
+
+        log.info("Journey {} created for SMS {}", savedJourney.getId(), smsId);
+
+        smsJourneyCache.invalidate(smsId);
+
+        return convertToDto(savedJourney);
     }
 
-    public List<SmsJourney> getAllJourneys() {
-        return repository.findAll();
+    @Async
+    @Transactional
+    public void createJourneyfromEvent(SmsRoutingDecisionEvent event) {
+        createJourney(event.getSmsId(), event.getSmsJourneyDto());
     }
 
-    public SmsJourney getJourneyById(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("Journey not found"));
-    }
 
-    public SmsJourney updateJourney(Long id, SmsJourney updatedData) {
-        SmsJourney existing = getJourneyById(id);
+    public List<SmsJourneyDto> getJourneysBySms(Long smsId) {
 
-        if ("Sent".equals(existing.getStatus())) {
-            throw new IllegalStateException("Cannot modify an already sent journey");
+        log.info("Fetching journeys for SMS {}", smsId);
+
+        if (!smsRepository.existsBySmsIdAndDeletedIsFalse(smsId)) {
+            throw new RuntimeException("SMS not found: " + smsId);
         }
 
-        if (updatedData.getSmsBody() != null) {
-            existing.setSmsBody(updatedData.getSmsBody());
-            calculateMetrics(existing); // Recalculate cost automatically if text changes
-        }
-        if (updatedData.getFallbackRoute() != null) {
-            existing.setFallbackRoute(updatedData.getFallbackRoute());
-        }
-
-        return repository.save(existing);
+        return smsJourneyCache.getJourneysBySmsId(smsId);
     }
 
-    public void deleteJourney(Long id) {
-        repository.deleteById(id);
+
+    @Transactional
+    public Long processJourney(Long journeyId) {
+
+        log.info("Processing journey {}", journeyId);
+
+        SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new RuntimeException("Journey not found: " + journeyId));
+
+        Sms sms = journey.getSms();
+
+        // Mark as processing
+        journey.setStatus(SmsStatus.SCHEDULED);
+
+        boolean primarySuccess = routingService.sendSms(journey.getPrimaryRoute(), sms);
+
+        if (primarySuccess) {
+
+            journey.setStatus(SmsStatus.SENT);
+            sms.setStatus(SmsStatus.SENT);
+
+            log.info("SMS {} successfully sent through primary route {}", sms.getSmsId(), journey.getPrimaryRoute());
+
+        } else {
+
+            log.warn("Primary route {} failed for SMS {}. Trying fallback route {}", journey.getPrimaryRoute(), sms.getSmsId(), journey.getFallbackRoute());
+
+            boolean fallbackSuccess = routingService.sendSms(journey.getFallbackRoute(), sms);
+
+            if (fallbackSuccess) {
+
+                journey.setStatus(SmsStatus.SENT);
+                sms.setStatus(SmsStatus.SENT);
+
+                log.info("SMS {} successfully sent through fallback route {}", sms.getSmsId(), journey.getFallbackRoute());
+
+            } else {
+
+                journey.setStatus(SmsStatus.FAILED);
+                sms.setStatus(SmsStatus.FAILED);
+
+                log.error("SMS {} failed through both primary {} and fallback {} routes", sms.getSmsId(), journey.getPrimaryRoute(), journey.getFallbackRoute());
+            }
+        }
+
+        // Persist changes
+        journeyRepository.save(journey);
+        smsRepository.save(sms);
+
+        // Database data changed, invalidate cache
+        smsJourneyCache.invalidate(sms.getSmsId());
+
+        return sms.getSmsId();
     }
 
-    // Smart Character & Pricing Calculation Engine
-    private void calculateMetrics(SmsJourney journey) {
-        String body = journey.getSmsBody();
-        int charCount = body.length();
-        journey.setCharCount(charCount);
 
-        // Basic check for Emojis/Unicode characters
-        boolean isUnicode = !body.matches("^[\\u0000-\\u007F]*$");
-        journey.setUnicode(isUnicode);
+    private SmsJourneyDto convertToDto(SmsJourney journey) {
 
-        // Enforce carrier segment constraints
-        int limitPerSegment = isUnicode ? 70 : 160;
-        int segments = (int) Math.ceil((double) charCount / limitPerSegment);
-        journey.setSegments(Math.max(segments, 1));
+        SmsJourneyDto dto = new SmsJourneyDto();
 
-        // Router pricing decisions
-        double rate = 0.0050; // Default route cost
-        if ("Twilio".equalsIgnoreCase(journey.getPrimaryRoute())) rate = 0.0075;
-        else if ("Infobip".equalsIgnoreCase(journey.getPrimaryRoute())) rate = 0.0090;
+        dto.setId(journey.getId());
+        dto.setCampaignName(journey.getCampaignName());
+        dto.setRoutingStep(journey.getRoutingStep());
+        dto.setPrimaryRoute(journey.getPrimaryRoute());
+        dto.setFallbackRoute(journey.getFallbackRoute());
+        dto.setCost(journey.getCost());
+        dto.setStatus(journey.getStatus());
+        dto.setScheduledTime(journey.getScheduledTime());
 
-        journey.setCost(journey.getSegments() * rate);
+        return dto;
     }
 }
