@@ -1,12 +1,14 @@
 package com.vonage.smsjourneyg.controller;
 
-import com.vonage.smsjourneyg.config.CacheConfig;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
+import com.vonage.smsjourneyg.rate.SmsRateLimiter;
 import com.vonage.smsjourneyg.service.SmsService;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -15,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
+
 
 import java.util.List;
 
@@ -26,7 +29,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(SmsController.class)
-@Import(CacheConfig.class)
 class SmsControllerTest {
 
     @Autowired
@@ -35,8 +37,18 @@ class SmsControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+//    @MockitoBean
+//    private SmsService smsService;
+
+    @Mock
     private SmsService smsService;
+
+    @Mock
+    private SmsRateLimiter smsRateLimiter;
+
+    @InjectMocks
+    private SmsController smsController;
+
 
     @Test
     void shouldCreateSms() throws Exception {

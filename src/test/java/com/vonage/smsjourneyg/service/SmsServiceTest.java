@@ -5,6 +5,7 @@ import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
+import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,6 +50,9 @@ class SmsServiceTest {
 
     @InjectMocks
     private SmsService smsService;
+
+    @MockitoBean
+    private SmsJourneyService smsJourneyService;
 
     private Sms sms;
     private SmsRequestDto smsRequestDto;
@@ -103,10 +108,7 @@ class SmsServiceTest {
     void getSms_WhenSmsDoesNotExist_ShouldThrowSmsNotFoundException() {
         when(smsRepository.findBySmsIdAndDeletedIsFalse(1L)).thenReturn(Optional.empty());
 
-        SmsNotFoundException exception = assertThrows(
-                SmsNotFoundException.class,
-                () -> smsService.getSms(1L)
-        );
+        SmsNotFoundException exception = assertThrows(SmsNotFoundException.class, () -> smsService.getSms(1L));
 
         assertEquals("SMS not found: 1", exception.getMessage());
         verify(smsRepository, times(1)).findBySmsIdAndDeletedIsFalse(1L);
@@ -120,10 +122,7 @@ class SmsServiceTest {
         smsResponseDto2.setMessage("Second Message");
         smsResponseDto2.setStatus(SmsStatus.SENT);
 
-        when(smsCache.getAllSms()).thenReturn(List.of(
-                toDto(sms),
-                smsResponseDto2
-        ));
+        when(smsCache.getAllSms()).thenReturn(List.of(toDto(sms), smsResponseDto2));
 
         List<SmsResponseDto> result = smsService.getAllSms();
 
@@ -149,11 +148,7 @@ class SmsServiceTest {
 
     @Test
     void getAllSms_WhenPageableProvided_ShouldReturnPaginatedResult() {
-        when(smsCache.getAllSms()).thenReturn(List.of(
-                toDto(sms),
-                buildSmsResponse(2L, "+919876543211", "Second Message", SmsStatus.SENT),
-                buildSmsResponse(3L, "+919876543212", "Third Message", SmsStatus.CREATED)
-        ));
+        when(smsCache.getAllSms()).thenReturn(List.of(toDto(sms), buildSmsResponse(2L, "+919876543211", "Second Message", SmsStatus.SENT), buildSmsResponse(3L, "+919876543212", "Third Message", SmsStatus.CREATED)));
 
         Page<SmsResponseDto> result = smsService.getAllSms(PageRequest.of(1, 2));
 
@@ -191,10 +186,7 @@ class SmsServiceTest {
     void deleteSms_WhenSmsDoesNotExist_ShouldThrowSmsNotFoundException() {
         when(smsRepository.findBySmsIdAndDeletedIsFalse(1L)).thenReturn(Optional.empty());
 
-        SmsNotFoundException exception = assertThrows(
-                SmsNotFoundException.class,
-                () -> smsService.deleteSms(1L)
-        );
+        SmsNotFoundException exception = assertThrows(SmsNotFoundException.class, () -> smsService.deleteSms(1L));
 
         assertEquals("SMS not found: 1", exception.getMessage());
         verify(smsRepository, times(1)).findBySmsIdAndDeletedIsFalse(1L);
@@ -207,14 +199,36 @@ class SmsServiceTest {
         when(smsRepository.findBySmsIdAndDeletedIsFalse(1L)).thenReturn(Optional.of(sms));
         doThrow(new RuntimeException("Journey delete failed")).when(journeyRepository).deleteBySmsSmsId(1L);
 
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> smsService.deleteSms(1L)
-        );
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> smsService.deleteSms(1L));
 
         assertEquals("Journey delete failed", exception.getMessage());
         verify(smsRepository, times(1)).save(sms);
         verify(smsCache, never()).invalidate();
+    }
+
+    @Test
+    void WhenDeleteSmsJourneyFails_thenSmsDeletionShouldRollback() {
+        Sms savedSms = smsRepository.saveAndFlush(sms);
+        SmsJourney journey = new SmsJourney();
+
+        journey.setSms(savedSms);
+        journey.setPrimaryRoute("VONAGE");
+        journey.setFallbackRoute("TWILIO");
+        journey.setStatus(SmsStatus.SCHEDULED);
+
+        SmsJourney savedJourney = journeyRepository.saveAndFlush(journey);
+
+        Long smsId = savedSms.getSmsId();
+        Long journeyId = savedJourney.getId();
+
+        doThrow(new RuntimeException("Journey deletion failed")).when(smsJourneyService).deleteJourney(journeyId);
+
+        assertThrows(RuntimeException.class, () -> smsService.deleteSms(smsId));
+
+        Optional<Sms> result = smsRepository.findById(smsId);
+
+        assertTrue(result.isPresent(), "SMS should still exist because transaction was rolled back");
+
     }
 
     private SmsResponseDto toDto(Sms sms) {

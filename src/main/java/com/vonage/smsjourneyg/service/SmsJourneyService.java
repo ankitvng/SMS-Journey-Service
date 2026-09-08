@@ -71,58 +71,73 @@ public class SmsJourneyService {
         return smsJourneyCache.getJourneysBySmsId(smsId);
     }
 
+//    @Transactional
+//    public Long processJourney(Long journeyId) {
+//
+//        log.info("Processing journey {}", journeyId);
+//
+//        SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new RuntimeException("Journey not found: " + journeyId));
+//
+//        Sms sms = journey.getSms();
+//
+//        // Mark as processing
+//        journey.setStatus(SmsStatus.SCHEDULED);
+//
+//        boolean primarySuccess = routingService.sendSms(journey.getPrimaryRoute(), sms);
+//
+//        if (primarySuccess) {
+//
+//            journey.setStatus(SmsStatus.SENT);
+//            sms.setStatus(SmsStatus.SENT);
+//
+//            log.info("SMS {} successfully sent through primary route {}", sms.getSmsId(), journey.getPrimaryRoute());
+//
+//        } else {
+//
+//            log.warn("Primary route {} failed for SMS {}. Trying fallback route {}", journey.getPrimaryRoute(), sms.getSmsId(), journey.getFallbackRoute());
+//
+//            boolean fallbackSuccess = routingService.sendSms(journey.getFallbackRoute(), sms);
+//
+//            if (fallbackSuccess) {
+//
+//                journey.setStatus(SmsStatus.SENT);
+//                sms.setStatus(SmsStatus.SENT);
+//
+//                log.info("SMS {} successfully sent through fallback route {}", sms.getSmsId(), journey.getFallbackRoute());
+//
+//            } else {
+//
+//                journey.setStatus(SmsStatus.FAILED);
+//                sms.setStatus(SmsStatus.FAILED);
+//
+//                log.error("SMS {} failed through both primary {} and fallback {} routes", sms.getSmsId(), journey.getPrimaryRoute(), journey.getFallbackRoute());
+//            }
+//        }
+//
+//        // Persist changes
+//        journeyRepository.save(journey);
+//        smsRepository.save(sms);
+//
+//        // Database data changed, invalidate cache
+//        smsJourneyCache.invalidate(sms.getSmsId());
+//
+//        return sms.getSmsId();
+//    }
 
-    @Transactional
-    public Long processJourney(Long journeyId) {
 
-        log.info("Processing journey {}", journeyId);
+    public void deleteJourney(Long journeyId) {
+
+        log.info("Deleting journey {}", journeyId);
 
         SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new RuntimeException("Journey not found: " + journeyId));
 
-        Sms sms = journey.getSms();
+        Long smsId = journey.getSms().getSmsId();
 
-        // Mark as processing
-        journey.setStatus(SmsStatus.SCHEDULED);
+        journeyRepository.delete(journey);
 
-        boolean primarySuccess = routingService.sendSms(journey.getPrimaryRoute(), sms);
+        log.info("Journey {} deleted successfully", journeyId);
 
-        if (primarySuccess) {
-
-            journey.setStatus(SmsStatus.SENT);
-            sms.setStatus(SmsStatus.SENT);
-
-            log.info("SMS {} successfully sent through primary route {}", sms.getSmsId(), journey.getPrimaryRoute());
-
-        } else {
-
-            log.warn("Primary route {} failed for SMS {}. Trying fallback route {}", journey.getPrimaryRoute(), sms.getSmsId(), journey.getFallbackRoute());
-
-            boolean fallbackSuccess = routingService.sendSms(journey.getFallbackRoute(), sms);
-
-            if (fallbackSuccess) {
-
-                journey.setStatus(SmsStatus.SENT);
-                sms.setStatus(SmsStatus.SENT);
-
-                log.info("SMS {} successfully sent through fallback route {}", sms.getSmsId(), journey.getFallbackRoute());
-
-            } else {
-
-                journey.setStatus(SmsStatus.FAILED);
-                sms.setStatus(SmsStatus.FAILED);
-
-                log.error("SMS {} failed through both primary {} and fallback {} routes", sms.getSmsId(), journey.getPrimaryRoute(), journey.getFallbackRoute());
-            }
-        }
-
-        // Persist changes
-        journeyRepository.save(journey);
-        smsRepository.save(sms);
-
-        // Database data changed, invalidate cache
-        smsJourneyCache.invalidate(sms.getSmsId());
-
-        return sms.getSmsId();
+        smsJourneyCache.invalidate(smsId);
     }
 
 

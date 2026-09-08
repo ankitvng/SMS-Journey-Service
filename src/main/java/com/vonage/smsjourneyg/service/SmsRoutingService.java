@@ -42,21 +42,4 @@ public class SmsRoutingService {
         return provider.send(sms);
     }
 
-
-//    public boolean sendSms(String route, Sms sms) {
-//
-//        log.info(
-//                "Attempting to send SMS {} through route {}",
-//                sms.getSmsId(),
-//                route
-//        );
-//
-//        // Simulate provider
-//
-//        if ("VONAGE".equals(route)) {
-//            return true;
-//        }
-//
-//        return false;
-//    }
 }
