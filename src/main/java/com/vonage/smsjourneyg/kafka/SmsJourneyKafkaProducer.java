@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 @Component
 @RequiredArgsConstructor
@@ -12,7 +13,8 @@ import org.springframework.stereotype.Component;
 public class SmsJourneyKafkaProducer {
     private final KafkaTemplate<String, SmsRoutingDecisionEvent> kafkaTemplate;
 
-    private static final String TOPIC = "${app.kafka.sms-topic}";
+    @Value("${app.kafka.sms-topic}")
+    private String topic;
 
     public void publish(SmsRoutingDecisionEvent event) {
 

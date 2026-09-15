@@ -26,11 +26,10 @@ public class SmsController {
     private final SmsRateLimiter smsRateLimiter;
 
     @PostMapping
-    public ResponseEntity<?> createSms(@RequestBody SmsRequestDto request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> createSms(@RequestBody SmsRequestDto request) {
 
-        String clientId = getClientIp(httpRequest);
 
-        if (!smsRateLimiter.isAllowed(clientId)) {
+        if (!smsRateLimiter.isAllowed()) {
 
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ErrorResponse(429, "Too Many Requests", "Too many requests. Please try again later.", LocalDateTime.now()));
         }
@@ -38,18 +37,6 @@ public class SmsController {
         SmsResponseDto response = smsService.createSms(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-
-            return forwardedFor.split(",")[0].trim();
-        }
-
-        return request.getRemoteAddr();
     }
 
     @GetMapping("/{smsId}")

@@ -104,7 +104,7 @@ public class SmsService {
 
         sms.setDeleted(true);
         smsRepository.save(sms);
-        journeyRepository.deleteBySmsId(smsId);
+        journeyRepository.deleteBySmsSmsId(smsId);
 
         log.info("SMS {} soft deleted successfully", smsId);
 

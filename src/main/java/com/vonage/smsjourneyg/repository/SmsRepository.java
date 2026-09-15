@@ -15,5 +15,4 @@ public interface SmsRepository extends JpaRepository<Sms, Long> {
 
     boolean existsBySmsIdAndDeletedIsFalse(Long smsId);
 
-    Optional<Sms> findByExternalSmsId(String smsId);
 }
