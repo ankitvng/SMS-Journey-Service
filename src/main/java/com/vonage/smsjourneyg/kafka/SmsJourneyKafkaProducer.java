@@ -14,7 +14,7 @@ public class SmsJourneyKafkaProducer {
     private final KafkaTemplate<String, SmsRoutingDecisionEvent> kafkaTemplate;
 
     @Value("${app.kafka.sms-topic}")
-    private String topic;
+    private String TOPIC;
 
     public void publish(SmsRoutingDecisionEvent event) {
 
