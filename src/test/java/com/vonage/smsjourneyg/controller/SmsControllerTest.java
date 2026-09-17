@@ -4,17 +4,15 @@ import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
-import com.vonage.smsjourneyg.rate.SmsRateLimiter;
+import com.vonage.smsjourneyg.rate.RateLimiter;
 import com.vonage.smsjourneyg.service.SmsService;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
@@ -44,7 +42,7 @@ class SmsControllerTest {
     private SmsService smsService;
 
     @Mock
-    private SmsRateLimiter smsRateLimiter;
+    private RateLimiter rateLimiter;
 
     @InjectMocks
     private SmsController smsController;

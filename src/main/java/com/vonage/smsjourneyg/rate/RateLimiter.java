@@ -1,25 +1,21 @@
 package com.vonage.smsjourneyg.rate;
 
-import com.vonage.smsjourneyg.config.RateLimitProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Component
-public class SmsRateLimiter {
+public class RateLimiter {
 
     private final int requestsLimit;
     private final long windowMillis;
 
     private final AtomicReference<RateLimitState> state;
 
-    public SmsRateLimiter(@Value("${sms.rate-limit.requests-limit}") int requestsLimit, @Value("${sms.rate-limit.window-millis}") long windowMillis) {
+    public RateLimiter(@Value("${sms.rate-limit.requests-limit}") int requestsLimit, @Value("${sms.rate-limit.window-millis}") long windowMillis) {
 
         this.requestsLimit = requestsLimit;
         this.windowMillis = windowMillis;

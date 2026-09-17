@@ -1,4 +1,4 @@
-package com.vonage.smsjourneyg.config;
+package com.vonage.smsjourneyg.rate;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

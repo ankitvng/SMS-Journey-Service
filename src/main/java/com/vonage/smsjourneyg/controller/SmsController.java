@@ -3,10 +3,8 @@ package com.vonage.smsjourneyg.controller;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.exception.ErrorResponse;
-import com.vonage.smsjourneyg.rate.SmsRateLimiter;
+import com.vonage.smsjourneyg.rate.RateLimiter;
 import com.vonage.smsjourneyg.service.SmsService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,16 +21,10 @@ public class SmsController {
 
     private final SmsService smsService;
 
-    private final SmsRateLimiter smsRateLimiter;
+    private final RateLimiter rateLimiter;
 
     @PostMapping
     public ResponseEntity<?> createSms(@RequestBody SmsRequestDto request) {
-
-
-        if (!smsRateLimiter.isAllowed()) {
-
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ErrorResponse(429, "Too Many Requests", "Too many requests. Please try again later.", LocalDateTime.now()));
-        }
 
         SmsResponseDto response = smsService.createSms(request);
 

@@ -2,6 +2,7 @@ package com.vonage.smsjourneyg.rate;
 
 
 import org.junit.jupiter.api.Test;
+
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -9,12 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SmsRateLimiterTest {
+class RateLimiterTest {
 
     @Test
     void shouldAllowRequestsWithinLimit() {
 
-        SmsRateLimiter rateLimiter = new SmsRateLimiter(5, 1000);
+        RateLimiter rateLimiter = new RateLimiter(5, 1000);
 
         for (int i = 0; i < 5; i++) {
             assertTrue(rateLimiter.isAllowed());
@@ -25,7 +26,7 @@ class SmsRateLimiterTest {
     @Test
     void shouldRejectRequestsAfterLimitIsReached() {
 
-        SmsRateLimiter rateLimiter = new SmsRateLimiter(5, 1000);
+        RateLimiter rateLimiter = new RateLimiter(5, 1000);
 
         // First 5 requests should pass
         for (int i = 0; i < 5; i++) {
@@ -44,7 +45,7 @@ class SmsRateLimiterTest {
     @Test
     void shouldResetAfterTimeWindowExpires() throws InterruptedException {
 
-        SmsRateLimiter rateLimiter = new SmsRateLimiter(2, 100);
+        RateLimiter rateLimiter = new RateLimiter(2, 100);
 
         // Window 1
         assertTrue(rateLimiter.isAllowed());
@@ -71,7 +72,7 @@ class SmsRateLimiterTest {
         int requestLimit = 100;
         int totalRequests = 1000;
 
-        SmsRateLimiter rateLimiter = new SmsRateLimiter(requestLimit, 5000);
+        RateLimiter rateLimiter = new RateLimiter(requestLimit, 5000);
 
         ExecutorService executor = Executors.newFixedThreadPool(20);
 

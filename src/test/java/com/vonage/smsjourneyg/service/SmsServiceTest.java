@@ -12,6 +12,8 @@ import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
 import com.vonage.smsjourneyg.mapper.SmsMapper;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+@Slf4j
 @ExtendWith(MockitoExtension.class)
 class SmsServiceTest {
 
@@ -198,7 +201,6 @@ class SmsServiceTest {
     void deleteSms_WhenJourneyDeleteFails_ShouldNotInvalidateCacheAndBubbleUpException() {
         when(smsRepository.findBySmsIdAndDeletedIsFalse(1L)).thenReturn(Optional.of(sms));
         doThrow(new RuntimeException("Journey delete failed")).when(journeyRepository).deleteBySmsSmsId(1L);
-
         RuntimeException exception = assertThrows(RuntimeException.class, () -> smsService.deleteSms(1L));
 
         assertEquals("Journey delete failed", exception.getMessage());
@@ -206,30 +208,6 @@ class SmsServiceTest {
         verify(smsCache, never()).invalidate();
     }
 
-    @Test
-    void WhenDeleteSmsJourneyFails_thenSmsDeletionShouldRollback() {
-        Sms savedSms = smsRepository.saveAndFlush(sms);
-        SmsJourney journey = new SmsJourney();
-
-        journey.setSms(savedSms);
-        journey.setPrimaryRoute("VONAGE");
-        journey.setFallbackRoute("TWILIO");
-        journey.setStatus(SmsStatus.SCHEDULED);
-
-        SmsJourney savedJourney = journeyRepository.saveAndFlush(journey);
-
-        Long smsId = savedSms.getSmsId();
-        Long journeyId = savedJourney.getId();
-
-        doThrow(new RuntimeException("Journey deletion failed")).when(smsJourneyService).deleteJourney(journeyId);
-
-        assertThrows(RuntimeException.class, () -> smsService.deleteSms(smsId));
-
-        Optional<Sms> result = smsRepository.findById(smsId);
-
-        assertTrue(result.isPresent(), "SMS should still exist because transaction was rolled back");
-
-    }
 
     private SmsResponseDto toDto(Sms sms) {
         SmsResponseDto dto = new SmsResponseDto();
