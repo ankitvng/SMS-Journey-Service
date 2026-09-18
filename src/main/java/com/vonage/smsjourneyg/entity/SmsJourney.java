@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.entity;
 
+import com.vonage.smsjourneyg.enums.SmsStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -14,16 +15,17 @@ public class SmsJourney {
 
     private String campaignName;
 
-    @Column(columnDefinition = "TEXT")
-    private String smsBody;
-
-    private int charCount;
-    private int segments;
-    private boolean isUnicode;
+    private String routingStep;
     private String primaryRoute;
     private String fallbackRoute;
     private double cost;
-    private String status = "Scheduled";
+
+    @Enumerated(EnumType.STRING)
+    private SmsStatus status = SmsStatus.SCHEDULED;
+
     private LocalDateTime scheduledTime;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sms_id")
+    private Sms sms;
 }

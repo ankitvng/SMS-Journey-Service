@@ -1,9 +1,7 @@
 HELP.md
 .gradle
-.gitattributes
-settings.gradle
-gradlew
-build.gradle
+
+
 build/
 .idea/
 !gradle/wrapper/gradle-wrapper.jar
