@@ -32,11 +32,4 @@ public class SmsJourneyController {
         return ResponseEntity.ok(journeyService.getJourneysBySms(smsId));
     }
 
-//    @PostMapping("/journeys/{journeyId}/process")
-//    public ResponseEntity<Void> processJourney(@PathVariable Long journeyId) {
-//
-//        journeyService.processJourney(journeyId);
-//
-//        return ResponseEntity.ok().build();
-//    }
 }

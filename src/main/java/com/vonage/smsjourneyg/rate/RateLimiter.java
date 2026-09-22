@@ -1,27 +1,26 @@
 package com.vonage.smsjourneyg.rate;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Component
+@Data
 public class RateLimiter {
 
+    @Value("${sms.rate-limit.requests-limit}")
     private final int requestsLimit;
-    private final long windowMillis;
 
-    private final AtomicReference<RateLimitState> state;
+    @Value("${sms.rate-limit.window-millis}")
+    private final Duration windowMillis;
 
-    public RateLimiter(@Value("${sms.rate-limit.requests-limit}") int requestsLimit, @Value("${sms.rate-limit.window-millis}") long windowMillis) {
+    private final AtomicReference<RateLimitState> state = new AtomicReference<>(new RateLimitState(System.currentTimeMillis(), 0));
 
-        this.requestsLimit = requestsLimit;
-        this.windowMillis = windowMillis;
-
-        this.state = new AtomicReference<>(new RateLimitState(System.currentTimeMillis(), 0));
-    }
 
     public boolean isAllowed() {
 
@@ -32,7 +31,7 @@ public class RateLimiter {
             RateLimitState current = state.get();
 
             // Current window expired
-            if (now - current.windowStart >= windowMillis) {
+            if (now - current.windowStart >= windowMillis.toMillis()) {
 
                 RateLimitState newState = new RateLimitState(now, 1);
 
@@ -56,14 +55,10 @@ public class RateLimiter {
         }
     }
 
+    @Data
     private static class RateLimitState {
 
         private final long windowStart;
         private final int requestCount;
-
-        private RateLimitState(long windowStart, int requestCount) {
-            this.windowStart = windowStart;
-            this.requestCount = requestCount;
-        }
     }
 }

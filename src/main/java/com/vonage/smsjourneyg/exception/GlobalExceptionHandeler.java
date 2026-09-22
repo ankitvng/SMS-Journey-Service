@@ -26,6 +26,16 @@ public class GlobalExceptionHandeler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(JourneyNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleJourneyNotFound(JourneyNotFoundException ex) {
+
+        log.warn("Journey not found: {}", ex.getMessage());
+
+        ErrorResponse error = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "NOT_FOUND", ex.getMessage(), LocalDateTime.now());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ValidationErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
 

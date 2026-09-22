@@ -1,6 +1,6 @@
 package com.vonage.smsjourneyg.service;
 
-import com.vonage.smsjourneyg.config.SmsCache;
+import com.vonage.smsjourneyg.cache.SmsCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
@@ -14,6 +14,7 @@ import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +34,21 @@ public class SmsService {
     private final SmsMapper smsMapper;
     private final SmsJourneyKafkaProducer producer;
     private final SmsJourneyRepository journeyRepository;
+
+    @Value("${app.sms.campaign-name}")
+    private String campaignName;
+
+    @Value("${app.sms.routing-step}")
+    private String routingStep;
+
+    @Value("${app.sms.primary-route}")
+    private String primaryRoute;
+
+    @Value("${app.sms.fallback-route}")
+    private String fallbackRoute;
+
+    @Value("${app.sms.cost}")
+    private double cost;
 
     public List<SmsResponseDto> getAllSms() {
         log.info("Getting all SMS");
@@ -62,38 +77,37 @@ public class SmsService {
 
         Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new SmsNotFoundException(smsId));
 
-        return convertToDto(sms);
+        return smsMapper.toResponseDto(sms);
     }
 
     public SmsResponseDto createSms(SmsRequestDto request) {
         log.info("Creating SMS for {}", request.getRecipient());
 
-        Sms sms = new Sms();
-        sms.setRecipient(request.getRecipient());
-        sms.setMessage(request.getMessage());
+        Sms sms = smsMapper.toEntity(request);
         sms.setStatus(SmsStatus.CREATED);
         sms.setCreatedAt(LocalDateTime.now());
 
         Sms savedSms = smsRepository.save(sms);
+        smsCache.invalidate();
+
         log.info("SMS {} created successfully", savedSms.getSmsId());
 
-        smsCache.invalidate();
         SmsRoutingDecisionEvent event = new SmsRoutingDecisionEvent();
         event.setSmsId(savedSms.getSmsId());
         
         SmsJourneyDto journeyDto = new SmsJourneyDto();
-        journeyDto.setCampaignName("Message Campaign");
-        journeyDto.setRoutingStep("PRIMARY");
-        journeyDto.setPrimaryRoute("VONAGE");
-        journeyDto.setFallbackRoute("TWILIO");
-        journeyDto.setCost(0.05);
+        journeyDto.setCampaignName(campaignName);
+        journeyDto.setRoutingStep(routingStep);
+        journeyDto.setPrimaryRoute(primaryRoute);
+        journeyDto.setFallbackRoute(fallbackRoute);
+        journeyDto.setCost(cost);
         journeyDto.setStatus(SmsStatus.CREATED);
 
         event.setSmsJourneyDto(journeyDto);
 
         producer.publish(event);
 
-        return convertToDto(savedSms);
+        return smsMapper.toResponseDto(savedSms);
     }
 
     @Transactional
@@ -105,19 +119,9 @@ public class SmsService {
         sms.setDeleted(true);
         smsRepository.save(sms);
         journeyRepository.deleteBySmsSmsId(smsId);
+        smsCache.invalidate();
 
         log.info("SMS {} soft deleted successfully", smsId);
-
-        smsCache.invalidate();
     }
 
-    private SmsResponseDto convertToDto(Sms sms) {
-        SmsResponseDto dto = new SmsResponseDto();
-        dto.setSmsId(sms.getSmsId());
-        dto.setRecipient(sms.getRecipient());
-        dto.setMessage(sms.getMessage());
-        dto.setStatus(sms.getStatus());
-        dto.setCreatedAt(sms.getCreatedAt());
-        return dto;
-    }
 }

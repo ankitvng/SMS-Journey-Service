@@ -1,11 +1,12 @@
 package com.vonage.smsjourneyg.service;
 
-import com.vonage.smsjourneyg.config.SmsJourneyCache;
+import com.vonage.smsjourneyg.cache.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
 import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
+import com.vonage.smsjourneyg.exception.JourneyNotFoundException;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
@@ -24,7 +25,6 @@ public class SmsJourneyService {
 
     private final SmsJourneyRepository journeyRepository;
     private final SmsRepository smsRepository;
-    private final SmsRoutingService routingService;
     private final SmsJourneyCache smsJourneyCache;
 
 
@@ -32,7 +32,7 @@ public class SmsJourneyService {
 
         log.info("Creating journey for SMS {}", smsId);
 
-        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new RuntimeException("SMS not found: " + smsId));
+        Sms sms = smsRepository.findBySmsIdAndDeletedIsFalse(smsId).orElseThrow(() -> new SmsNotFoundException(smsId));
 
         SmsJourney journey = new SmsJourney();
         journey.setSms(sms);
@@ -53,10 +53,12 @@ public class SmsJourneyService {
         return convertToDto(savedJourney);
     }
 
-    @Async
+    @Async("taskExecutor")
     @Transactional
     public void createJourneyfromEvent(SmsRoutingDecisionEvent event) {
+
         createJourney(event.getSmsId(), event.getSmsJourneyDto());
+
     }
 
 
@@ -64,72 +66,15 @@ public class SmsJourneyService {
 
         log.info("Fetching journeys for SMS {}", smsId);
 
-        if (!smsRepository.existsBySmsIdAndDeletedIsFalse(smsId)) {
-            throw new RuntimeException("SMS not found: " + smsId);
-        }
-
         return smsJourneyCache.getJourneysBySmsId(smsId);
     }
-
-//    @Transactional
-//    public Long processJourney(Long journeyId) {
-//
-//        log.info("Processing journey {}", journeyId);
-//
-//        SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new RuntimeException("Journey not found: " + journeyId));
-//
-//        Sms sms = journey.getSms();
-//
-//        // Mark as processing
-//        journey.setStatus(SmsStatus.SCHEDULED);
-//
-//        boolean primarySuccess = routingService.sendSms(journey.getPrimaryRoute(), sms);
-//
-//        if (primarySuccess) {
-//
-//            journey.setStatus(SmsStatus.SENT);
-//            sms.setStatus(SmsStatus.SENT);
-//
-//            log.info("SMS {} successfully sent through primary route {}", sms.getSmsId(), journey.getPrimaryRoute());
-//
-//        } else {
-//
-//            log.warn("Primary route {} failed for SMS {}. Trying fallback route {}", journey.getPrimaryRoute(), sms.getSmsId(), journey.getFallbackRoute());
-//
-//            boolean fallbackSuccess = routingService.sendSms(journey.getFallbackRoute(), sms);
-//
-//            if (fallbackSuccess) {
-//
-//                journey.setStatus(SmsStatus.SENT);
-//                sms.setStatus(SmsStatus.SENT);
-//
-//                log.info("SMS {} successfully sent through fallback route {}", sms.getSmsId(), journey.getFallbackRoute());
-//
-//            } else {
-//
-//                journey.setStatus(SmsStatus.FAILED);
-//                sms.setStatus(SmsStatus.FAILED);
-//
-//                log.error("SMS {} failed through both primary {} and fallback {} routes", sms.getSmsId(), journey.getPrimaryRoute(), journey.getFallbackRoute());
-//            }
-//        }
-//
-//        // Persist changes
-//        journeyRepository.save(journey);
-//        smsRepository.save(sms);
-//
-//        // Database data changed, invalidate cache
-//        smsJourneyCache.invalidate(sms.getSmsId());
-//
-//        return sms.getSmsId();
-//    }
 
 
     public void deleteJourney(Long journeyId) {
 
         log.info("Deleting journey {}", journeyId);
 
-        SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new RuntimeException("Journey not found: " + journeyId));
+        SmsJourney journey = journeyRepository.findById(journeyId).orElseThrow(() -> new JourneyNotFoundException(journeyId));
 
         Long smsId = journey.getSms().getSmsId();
 
