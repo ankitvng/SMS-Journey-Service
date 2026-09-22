@@ -2,10 +2,10 @@ package com.vonage.smsjourneyg.rate;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
+
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -13,11 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Data
 public class RateLimiter {
 
-    @Value("${sms.rate-limit.requests-limit}")
-    private final int requestsLimit;
-
-    @Value("${sms.rate-limit.window-millis}")
-    private final Duration windowMillis;
+    private final RateLimitProperties props;
 
     private final AtomicReference<RateLimitState> state = new AtomicReference<>(new RateLimitState(System.currentTimeMillis(), 0));
 
@@ -31,7 +27,7 @@ public class RateLimiter {
             RateLimitState current = state.get();
 
             // Current window expired
-            if (now - current.windowStart >= windowMillis.toMillis()) {
+            if (now - current.windowStart >= props.getTimeWindow().toMillis()) {
 
                 RateLimitState newState = new RateLimitState(now, 1);
 
@@ -42,7 +38,7 @@ public class RateLimiter {
                 continue;
             }
 
-            if (current.requestCount >= requestsLimit) {
+            if (current.requestCount >=props.getRequestsLimit()) {
                 return false;
             }
 
