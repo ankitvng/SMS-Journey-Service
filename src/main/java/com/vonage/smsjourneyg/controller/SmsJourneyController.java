@@ -1,6 +1,7 @@
 package com.vonage.smsjourneyg.controller;
 
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsJourneyRequest;
 import com.vonage.smsjourneyg.service.SmsJourneyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,7 @@ public class SmsJourneyController {
 
 
     @PostMapping("/{smsId}/journeys")
-    public ResponseEntity<SmsJourneyDto> createJourney(@PathVariable Long smsId, @RequestBody SmsJourneyDto request) {
+    public ResponseEntity<SmsJourneyDto> createJourney(@PathVariable Long smsId, @RequestBody SmsJourneyRequest request) {
 
         SmsJourneyDto response = journeyService.createJourney(smsId, request);
 
@@ -32,11 +33,4 @@ public class SmsJourneyController {
         return ResponseEntity.ok(journeyService.getJourneysBySms(smsId));
     }
 
-//    @PostMapping("/journeys/{journeyId}/process")
-//    public ResponseEntity<Void> processJourney(@PathVariable Long journeyId) {
-//
-//        journeyService.processJourney(journeyId);
-//
-//        return ResponseEntity.ok().build();
-//    }
 }

@@ -1,4 +1,4 @@
-package com.vonage.smsjourneyg.config;
+package com.vonage.smsjourneyg.cache;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;

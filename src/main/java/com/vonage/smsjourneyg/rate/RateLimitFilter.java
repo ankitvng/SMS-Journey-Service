@@ -14,25 +14,28 @@ import java.io.IOException;
 @Component
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter{
+    
+    private static final String SMS_API_PATH = "/api/sms";
 
-
-    private RateLimiter rateLimiter;
+    private final RateLimiter rateLimiter;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        if (!rateLimiter.isAllowed()){
-            response.setStatus(429);
-            response.setContentType("application/json");
-            response.getWriter().write("""
-                {
-                    "status": 429,
-                    "error": "Too Many Requests",
-                    "message": "Too many requests. Please try again later."
-                }
-                """);
+        if (request.getHttpServletMapping().getPattern().equals(SMS_API_PATH)) {
+            if (!rateLimiter.isAllowed()){
+                response.setStatus(429);
+                response.setContentType("application/json");
+                response.getWriter().write("""
+                    {
+                        "status": 429,
+                        "error": "Too Many Requests",
+                        "message": "Too many requests. Please try again later."
+                    }
+                    """);
 
-            return;
+                return;
+            }
         }
         filterChain.doFilter(request, response);
     }

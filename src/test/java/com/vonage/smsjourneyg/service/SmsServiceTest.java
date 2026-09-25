@@ -1,18 +1,15 @@
 package com.vonage.smsjourneyg.service;
 
-import com.vonage.smsjourneyg.config.SmsCache;
-import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
+import com.vonage.smsjourneyg.cache.SmsCache;
 import com.vonage.smsjourneyg.dto.SmsRequestDto;
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
-import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.exception.SmsNotFoundException;
 import com.vonage.smsjourneyg.kafka.SmsJourneyKafkaProducer;
 import com.vonage.smsjourneyg.mapper.SmsMapper;
 import com.vonage.smsjourneyg.repository.SmsJourneyRepository;
 import com.vonage.smsjourneyg.repository.SmsRepository;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

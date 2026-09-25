@@ -3,6 +3,7 @@ package com.vonage.smsjourneyg.rate;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,7 +16,7 @@ class RateLimiterTest {
     @Test
     void shouldAllowRequestsWithinLimit() {
 
-        RateLimiter rateLimiter = new RateLimiter(5, 1000);
+        RateLimiter rateLimiter = rateLimiter(5, Duration.ofSeconds(1));
 
         for (int i = 0; i < 5; i++) {
             assertTrue(rateLimiter.isAllowed());
@@ -26,7 +27,7 @@ class RateLimiterTest {
     @Test
     void shouldRejectRequestsAfterLimitIsReached() {
 
-        RateLimiter rateLimiter = new RateLimiter(5, 1000);
+        RateLimiter rateLimiter = rateLimiter(5, Duration.ofSeconds(1));
 
         // First 5 requests should pass
         for (int i = 0; i < 5; i++) {
@@ -45,7 +46,7 @@ class RateLimiterTest {
     @Test
     void shouldResetAfterTimeWindowExpires() throws InterruptedException {
 
-        RateLimiter rateLimiter = new RateLimiter(2, 100);
+        RateLimiter rateLimiter = rateLimiter(2, Duration.ofMillis(100));
 
         // Window 1
         assertTrue(rateLimiter.isAllowed());
@@ -72,7 +73,7 @@ class RateLimiterTest {
         int requestLimit = 100;
         int totalRequests = 1000;
 
-        RateLimiter rateLimiter = new RateLimiter(requestLimit, 5000);
+        RateLimiter rateLimiter = rateLimiter(requestLimit, Duration.ofSeconds(5));
 
         ExecutorService executor = Executors.newFixedThreadPool(20);
 
@@ -83,7 +84,6 @@ class RateLimiterTest {
         AtomicInteger allowedRequests = new AtomicInteger(0);
 
         AtomicInteger rejectedRequests = new AtomicInteger(0);
-
 
         for (int i = 0; i < totalRequests; i++) {
 
@@ -120,5 +120,12 @@ class RateLimiterTest {
         assertEquals(requestLimit, allowedRequests.get());
 
         assertEquals(totalRequests - requestLimit, rejectedRequests.get());
+    }
+
+    private RateLimiter rateLimiter(int requestsLimit, Duration timeWindow) {
+        RateLimitProperties properties = new RateLimitProperties();
+        properties.setRequestsLimit(requestsLimit);
+        properties.setTimeWindow(timeWindow);
+        return new RateLimiter(properties);
     }
 }

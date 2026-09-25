@@ -1,4 +1,4 @@
-package com.vonage.smsjourneyg.config;
+package com.vonage.smsjourneyg.cache;
 
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;

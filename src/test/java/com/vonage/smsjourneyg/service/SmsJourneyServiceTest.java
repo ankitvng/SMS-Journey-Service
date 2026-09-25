@@ -1,7 +1,8 @@
 package com.vonage.smsjourneyg.service;
 
-import com.vonage.smsjourneyg.config.SmsJourneyCache;
+import com.vonage.smsjourneyg.cache.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsJourneyRequest;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
@@ -42,7 +43,7 @@ class SmsJourneyServiceTest {
 
     private Sms sms;
     private SmsJourney journey;
-    private SmsJourneyDto requestDto;
+    private SmsJourneyRequest requestDto;
 
     @BeforeEach
     void setUp() {
@@ -63,13 +64,13 @@ class SmsJourneyServiceTest {
         journey.setStatus(SmsStatus.SCHEDULED);
         journey.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
 
-        requestDto = new SmsJourneyDto();
+        requestDto = new SmsJourneyRequest();
         requestDto.setCampaignName("Summer Promo");
         requestDto.setRoutingStep("PRIMARY_ATTEMPT");
         requestDto.setPrimaryRoute("ROUTE_A");
         requestDto.setFallbackRoute("ROUTE_B");
         requestDto.setCost(0.05);
-        requestDto.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
+       // requestDto.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
     }
 
     // --- createJourney Tests ---
@@ -152,74 +153,6 @@ class SmsJourneyServiceTest {
         assertTrue(result.isEmpty());
         verify(smsJourneyCache, times(1)).getJourneysBySmsId(100L);
     }
-
-    // --- processJourney Tests ---
-
-//    @Test
-//    void processJourney_PrimaryRouteSuccess_ShouldSetStatusSent() {
-//        when(journeyRepository.findById(1L)).thenReturn(Optional.of(journey));
-//        when(routingService.sendSms("ROUTE_A", sms)).thenReturn(true);
-//
-//        journeyService.processJourney(1L);
-//
-//        assertEquals(SmsStatus.SENT, journey.getStatus());
-//        assertEquals(SmsStatus.SENT, sms.getStatus());
-//
-//        verify(routingService, times(1)).sendSms("ROUTE_A", sms);
-//        verify(routingService, never()).sendSms(eq("ROUTE_B"), any());
-//        verify(journeyRepository, times(1)).save(journey);
-//        verify(smsRepository, times(1)).save(sms);
-//    }
-//
-//    @Test
-//    void processJourney_PrimaryFails_FallbackSuccess_ShouldSetStatusSent() {
-//        when(journeyRepository.findById(1L)).thenReturn(Optional.of(journey));
-//        when(routingService.sendSms("ROUTE_A", sms)).thenReturn(false);
-//        when(routingService.sendSms("ROUTE_B", sms)).thenReturn(true);
-//
-//        journeyService.processJourney(1L);
-//
-//        assertEquals(SmsStatus.SENT, journey.getStatus());
-//        assertEquals(SmsStatus.SENT, sms.getStatus());
-//
-//        verify(routingService, times(1)).sendSms("ROUTE_A", sms);
-//        verify(routingService, times(1)).sendSms("ROUTE_B", sms);
-//        verify(journeyRepository, times(1)).save(journey);
-//        verify(smsRepository, times(1)).save(sms);
-//    }
-//
-//    @Test
-//    void processJourney_BothRoutesFail_ShouldSetStatusFailed() {
-//        when(journeyRepository.findById(1L)).thenReturn(Optional.of(journey));
-//        when(routingService.sendSms("ROUTE_A", sms)).thenReturn(false);
-//        when(routingService.sendSms("ROUTE_B", sms)).thenReturn(false);
-//
-//        journeyService.processJourney(1L);
-//
-//        assertEquals(SmsStatus.FAILED, journey.getStatus());
-//        assertEquals(SmsStatus.FAILED, sms.getStatus());
-//
-//        verify(routingService, times(1)).sendSms("ROUTE_A", sms);
-//        verify(routingService, times(1)).sendSms("ROUTE_B", sms);
-//        verify(journeyRepository, times(1)).save(journey);
-//        verify(smsRepository, times(1)).save(sms);
-//    }
-//
-//    @Test
-//    void processJourney_WhenJourneyDoesNotExist_ShouldThrowRuntimeException() {
-//        when(journeyRepository.findById(1L)).thenReturn(Optional.empty());
-//
-//        RuntimeException exception = assertThrows(
-//                RuntimeException.class,
-//                () -> journeyService.processJourney(1L)
-//        );
-//
-//        assertEquals("Journey not found: 1", exception.getMessage());
-//        verify(journeyRepository, times(1)).findById(1L);
-//        verify(routingService, never()).sendSms(any(), any());
-//        verify(journeyRepository, never()).save(any());
-//        verify(smsRepository, never()).save(any());
-//    }
 
     private SmsJourneyDto convertToDto(SmsJourney journey) {
         SmsJourneyDto dto = new SmsJourneyDto();

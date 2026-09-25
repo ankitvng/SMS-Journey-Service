@@ -1,4 +1,4 @@
-package com.vonage.smsjourneyg.config;
+package com.vonage.smsjourneyg.cache;
 
 import com.vonage.smsjourneyg.dto.SmsResponseDto;
 import com.vonage.smsjourneyg.entity.Sms;
