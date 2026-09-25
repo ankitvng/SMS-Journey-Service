@@ -35,20 +35,6 @@ public class SmsService {
     private final SmsJourneyKafkaProducer producer;
     private final SmsJourneyRepository journeyRepository;
 
-    @Value("${app.sms.campaign-name}")
-    private String campaignName;
-
-    @Value("${app.sms.routing-step}")
-    private String routingStep;
-
-    @Value("${app.sms.primary-route}")
-    private String primaryRoute;
-
-    @Value("${app.sms.fallback-route}")
-    private String fallbackRoute;
-
-    @Value("${app.sms.cost}")
-    private double cost;
 
     public List<SmsResponseDto> getAllSms() {
         log.info("Getting all SMS");
@@ -94,16 +80,7 @@ public class SmsService {
 
         SmsRoutingDecisionEvent event = new SmsRoutingDecisionEvent();
         event.setSmsId(savedSms.getSmsId());
-        
-        SmsJourneyDto journeyDto = new SmsJourneyDto();
-        journeyDto.setCampaignName(campaignName);
-        journeyDto.setRoutingStep(routingStep);
-        journeyDto.setPrimaryRoute(primaryRoute);
-        journeyDto.setFallbackRoute(fallbackRoute);
-        journeyDto.setCost(cost);
-        journeyDto.setStatus(SmsStatus.CREATED);
-
-        event.setSmsJourneyDto(journeyDto);
+        event.setSmsJourney(request.getSmsJourneyRequest());
 
         producer.publish(event);
 

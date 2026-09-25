@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -11,19 +12,17 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter{
-
+    
+    private static final String SMS_API_PATH = "/api/sms";
 
     private final RateLimiter rateLimiter;
-
-    public RateLimitFilter(RateLimiter rateLimiter) {
-        this.rateLimiter = rateLimiter;
-    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
-        if(request.getHttpServletMapping().getPattern().equals("/api/sms")){
+        if (request.getHttpServletMapping().getPattern().equals(SMS_API_PATH)) {
             if (!rateLimiter.isAllowed()){
                 response.setStatus(429);
                 response.setContentType("application/json");

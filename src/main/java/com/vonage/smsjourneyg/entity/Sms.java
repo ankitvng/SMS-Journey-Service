@@ -29,10 +29,6 @@ public class Sms {
 
     private LocalDateTime createdAt;
 
-    @OneToMany(
-            mappedBy = "sms",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
+    @OneToMany(mappedBy = "sms", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SmsJourney> journeys = new ArrayList<>();
 }

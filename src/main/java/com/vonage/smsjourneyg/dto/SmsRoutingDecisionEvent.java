@@ -1,5 +1,6 @@
 package com.vonage.smsjourneyg.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -7,7 +8,9 @@ import java.time.LocalDateTime;
 @Data
 public class SmsRoutingDecisionEvent {
 
+    @NotNull
     private Long smsId;
 
-    private SmsJourneyDto smsJourneyDto;
+    @NotNull
+    private SmsJourneyRequest smsJourney;
 }

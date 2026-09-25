@@ -1,6 +1,7 @@
 package com.vonage.smsjourneyg.controller;
 
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsJourneyRequest;
 import com.vonage.smsjourneyg.enums.SmsStatus;
 import com.vonage.smsjourneyg.service.SmsJourneyService;
 import org.junit.jupiter.api.Test;
@@ -55,22 +56,9 @@ class SmsJourneyControllerTest {
         response.setCost(0.05);
         response.setStatus(SmsStatus.PENDING);
 
-        when(journeyService.createJourney(eq(smsId), any(SmsJourneyDto.class)))
-                .thenReturn(response);
+        when(journeyService.createJourney(eq(smsId), any(SmsJourneyRequest.class))).thenReturn(response);
 
-        mockMvc.perform(
-                        post("/api/sms/{smsId}/journeys", smsId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request))
-                )
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.campaignName").value("Summer Promo"))
-                .andExpect(jsonPath("$.routingStep").value("PRIMARY_ATTEMPT"))
-                .andExpect(jsonPath("$.primaryRoute").value("ROUTE_A"))
-                .andExpect(jsonPath("$.fallbackRoute").value("ROUTE_B"))
-                .andExpect(jsonPath("$.cost").value(0.05))
-                .andExpect(jsonPath("$.status").value(SmsStatus.PENDING.name()));
+        mockMvc.perform(post("/api/sms/{smsId}/journeys", smsId).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request))).andExpect(status().isCreated()).andExpect(jsonPath("$.id").value(1)).andExpect(jsonPath("$.campaignName").value("Summer Promo")).andExpect(jsonPath("$.routingStep").value("PRIMARY_ATTEMPT")).andExpect(jsonPath("$.primaryRoute").value("ROUTE_A")).andExpect(jsonPath("$.fallbackRoute").value("ROUTE_B")).andExpect(jsonPath("$.cost").value(0.05)).andExpect(jsonPath("$.status").value(SmsStatus.PENDING.name()));
     }
 
     @Test
@@ -87,49 +75,16 @@ class SmsJourneyControllerTest {
         journey2.setCampaignName("Campaign 2");
         journey2.setStatus(SmsStatus.PENDING);
 
-        when(journeyService.getJourneysBySms(smsId))
-                .thenReturn(List.of(journey1, journey2));
+        when(journeyService.getJourneysBySms(smsId)).thenReturn(List.of(journey1, journey2));
 
-        mockMvc.perform(
-                        get("/api/sms/{smsId}/journeys", smsId)
-                )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].campaignName").value("Campaign 1"))
-                .andExpect(jsonPath("$[0].status").value(SmsStatus.COMPLETED.name()))
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].campaignName").value("Campaign 2"))
-                .andExpect(jsonPath("$[1].status").value(SmsStatus.PENDING.name()));
+        mockMvc.perform(get("/api/sms/{smsId}/journeys", smsId)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2)).andExpect(jsonPath("$[0].id").value(1)).andExpect(jsonPath("$[0].campaignName").value("Campaign 1")).andExpect(jsonPath("$[0].status").value(SmsStatus.COMPLETED.name())).andExpect(jsonPath("$[1].id").value(2)).andExpect(jsonPath("$[1].campaignName").value("Campaign 2")).andExpect(jsonPath("$[1].status").value(SmsStatus.PENDING.name()));
     }
 
     @Test
     void shouldReturnEmptyListWhenNoJourneysExist() throws Exception {
         when(journeyService.getJourneysBySms(100L)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/sms/{smsId}/journeys", 100L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(0));
+        mockMvc.perform(get("/api/sms/{smsId}/journeys", 100L)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
     }
 
-//    @Test
-//    void shouldProcessJourney() throws Exception {
-//        Long journeyId = 1L;
-//
-//        when(journeyService.processJourney(journeyId)).thenReturn(100L);
-//
-//        mockMvc.perform(
-//                        post("/api/sms/journeys/{journeyId}/process", journeyId)
-//                )
-//                .andExpect(status().isOk());
-//    }
-//
-//    @Test
-//    void shouldReturnInternalServerErrorWhenJourneyProcessingFails() throws Exception {
-//        Long journeyId = 1L;
-//        doThrow(new RuntimeException("Journey not found: 1")).when(journeyService).processJourney(journeyId);
-//
-//        mockMvc.perform(post("/api/sms/journeys/{journeyId}/process", journeyId))
-//                .andExpect(status().isInternalServerError());
-//    }
 }

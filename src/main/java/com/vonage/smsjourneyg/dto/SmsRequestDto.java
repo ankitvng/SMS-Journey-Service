@@ -21,4 +21,6 @@ public class SmsRequestDto {
             message = "SMS message cannot exceed 1600 characters"
     )
     private String message;
+
+    private SmsJourneyRequest smsJourneyRequest;
 }

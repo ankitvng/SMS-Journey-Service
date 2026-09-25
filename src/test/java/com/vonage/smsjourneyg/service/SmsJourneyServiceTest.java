@@ -2,6 +2,7 @@ package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.cache.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsJourneyRequest;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
 import com.vonage.smsjourneyg.enums.SmsStatus;
@@ -42,7 +43,7 @@ class SmsJourneyServiceTest {
 
     private Sms sms;
     private SmsJourney journey;
-    private SmsJourneyDto requestDto;
+    private SmsJourneyRequest requestDto;
 
     @BeforeEach
     void setUp() {
@@ -63,13 +64,13 @@ class SmsJourneyServiceTest {
         journey.setStatus(SmsStatus.SCHEDULED);
         journey.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
 
-        requestDto = new SmsJourneyDto();
+        requestDto = new SmsJourneyRequest();
         requestDto.setCampaignName("Summer Promo");
         requestDto.setRoutingStep("PRIMARY_ATTEMPT");
         requestDto.setPrimaryRoute("ROUTE_A");
         requestDto.setFallbackRoute("ROUTE_B");
         requestDto.setCost(0.05);
-        requestDto.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
+       // requestDto.setScheduledTime(LocalDateTime.of(2026, 8, 17, 12, 0));
     }
 
     // --- createJourney Tests ---

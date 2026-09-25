@@ -2,6 +2,7 @@ package com.vonage.smsjourneyg.service;
 
 import com.vonage.smsjourneyg.cache.SmsJourneyCache;
 import com.vonage.smsjourneyg.dto.SmsJourneyDto;
+import com.vonage.smsjourneyg.dto.SmsJourneyRequest;
 import com.vonage.smsjourneyg.dto.SmsRoutingDecisionEvent;
 import com.vonage.smsjourneyg.entity.Sms;
 import com.vonage.smsjourneyg.entity.SmsJourney;
@@ -16,6 +17,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -28,7 +30,7 @@ public class SmsJourneyService {
     private final SmsJourneyCache smsJourneyCache;
 
 
-    public SmsJourneyDto createJourney(Long smsId, SmsJourneyDto request) {
+    public SmsJourneyDto createJourney(Long smsId, SmsJourneyRequest request) {
 
         log.info("Creating journey for SMS {}", smsId);
 
@@ -41,7 +43,7 @@ public class SmsJourneyService {
         journey.setPrimaryRoute(request.getPrimaryRoute());
         journey.setFallbackRoute(request.getFallbackRoute());
         journey.setCost(request.getCost());
-        journey.setScheduledTime(request.getScheduledTime());
+        journey.setScheduledTime(LocalDateTime.now());
         journey.setStatus(SmsStatus.SCHEDULED);
 
         SmsJourney savedJourney = journeyRepository.save(journey);
@@ -57,7 +59,7 @@ public class SmsJourneyService {
     @Transactional
     public void createJourneyfromEvent(SmsRoutingDecisionEvent event) {
 
-        createJourney(event.getSmsId(), event.getSmsJourneyDto());
+        createJourney(event.getSmsId(), event.getSmsJourney());
 
     }
 
