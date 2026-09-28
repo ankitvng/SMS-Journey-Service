@@ -20,8 +20,12 @@ import java.util.Map;
 @Configuration
 public class SmsJourneyKafkaProducerConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+
+    private final String bootstrapServers;
+
+    public SmsJourneyKafkaProducerConfig(@Value("${spring.kafka.bootstrap-servers}")String bootstrapServers) {
+        this.bootstrapServers = bootstrapServers;
+    }
 
 
     @Bean

@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
@@ -19,11 +18,15 @@ import java.util.Map;
 @Configuration
 @EnableKafka
 public class SmsJourneyKafkaConsumerConfig {
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
 
-    @Value("${spring.kafka.consumer.group-id}")
-    private String groupId;
+    private final String bootstrapServers;
+
+    private final String groupId;
+
+    public SmsJourneyKafkaConsumerConfig(@Value("${spring.kafka.bootstrap-servers}")String bootstrapServers,@Value("${spring.kafka.consumer.group-id}") String groupId) {
+        this.bootstrapServers = bootstrapServers;
+        this.groupId = groupId;
+    }
 
     @Bean
     public ConsumerFactory<String, SmsRoutingDecisionEvent> consumerFactory() {
