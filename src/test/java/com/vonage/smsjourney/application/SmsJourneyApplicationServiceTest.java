@@ -1,5 +1,6 @@
 package com.vonage.smsjourney.application;
 
+import com.vonage.smsjourney.adapter.out.cache.SmsJourneyCacheAdapter;
 import com.vonage.smsjourney.application.port.in.CreateSmsJourneyUseCase;
 import com.vonage.smsjourney.application.port.in.GetSmsJourneyUseCase;
 import com.vonage.smsjourney.application.port.in.command.CreateSmsJourneyCommand;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -44,15 +46,12 @@ class SmsJourneyApplicationServiceTest {
 
     @BeforeEach
     void setUp() {
-        SmsJourneyApplicationService applicationService = new SmsJourneyApplicationService(
-                journeyRepository, smsRepository, new SmsJourneyMapper());
+        SmsJourneyApplicationService applicationService = new SmsJourneyApplicationService(journeyRepository, smsRepository, new SmsJourneyMapper(),new SmsJourneyCacheAdapter(journeyRepository, Duration.ofSeconds(5)));
         createJourney = applicationService;
         getJourneys = applicationService;
 
-        sms = new Sms(100L, "+919876543210", "Test Message", SmsStatus.CREATED,
-                false, LocalDateTime.now());
-        journey = new SmsJourney(1L, "Summer Promo", "PRIMARY_ATTEMPT", "ROUTE_A", "ROUTE_B",
-                0.05, SmsStatus.SCHEDULED, null, sms);
+        sms = new Sms(100L, "+919876543210", "Test Message", SmsStatus.CREATED, false, LocalDateTime.now());
+        journey = new SmsJourney(1L, "Summer Promo", "PRIMARY_ATTEMPT", "ROUTE_A", "ROUTE_B", 0.05, SmsStatus.SCHEDULED, null, sms);
         command = new CreateSmsJourneyCommand("Summer Promo", "PRIMARY_ATTEMPT", "ROUTE_A", "ROUTE_B", 0.05);
     }
 
@@ -78,9 +77,7 @@ class SmsJourneyApplicationServiceTest {
     void createJourney_whenSmsDoesNotExist_throwsNotFound() {
         given(smsRepository.findActiveById(100L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> createJourney.createSmsJourney(100L, command))
-                .isInstanceOf(SmsNotFoundException.class)
-                .hasMessage("SMS not found: 100");
+        assertThatThrownBy(() -> createJourney.createSmsJourney(100L, command)).isInstanceOf(SmsNotFoundException.class).hasMessage("SMS not found: 100");
         then(journeyRepository).should(never()).save(any());
     }
 
@@ -101,9 +98,7 @@ class SmsJourneyApplicationServiceTest {
     void getJourneysBySms_whenSmsDoesNotExist_throwsNotFound() {
         given(smsRepository.findActiveById(100L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> getJourneys.getById(100L))
-                .isInstanceOf(SmsNotFoundException.class)
-                .hasMessage("SMS not found: 100");
+        assertThatThrownBy(() -> getJourneys.getById(100L)).isInstanceOf(SmsNotFoundException.class).hasMessage("SMS not found: 100");
         then(journeyRepository).should(never()).findBySmsId(100L);
     }
 

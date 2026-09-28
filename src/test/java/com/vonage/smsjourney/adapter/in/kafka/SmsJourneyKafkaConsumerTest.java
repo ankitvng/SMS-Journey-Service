@@ -1,6 +1,5 @@
 package com.vonage.smsjourney.adapter.in.kafka;
 
-import com.vonage.smsjourney.adapter.in.kafka.SmsJourneyKafkaConsumer;
 import com.vonage.smsjourney.application.kafka.SmsRoutingDecisionEvent;
 import com.vonage.smsjourney.application.port.in.CreateJourneyFromEventUseCase;
 import com.vonage.smsjourney.domain.model.SmsJourney;

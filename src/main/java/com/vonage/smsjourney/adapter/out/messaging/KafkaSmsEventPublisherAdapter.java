@@ -12,8 +12,7 @@ public class KafkaSmsEventPublisherAdapter implements SmsEventPublisherPort {
     private final KafkaTemplate<String, SmsRoutingDecisionEvent> kafkaTemplate;
     private final String topic;
 
-    public KafkaSmsEventPublisherAdapter(KafkaTemplate<String, SmsRoutingDecisionEvent> kafkaTemplate,
-                                         @Value("${app.kafka.sms-topic}") String topic) {
+    public KafkaSmsEventPublisherAdapter(KafkaTemplate<String, SmsRoutingDecisionEvent> kafkaTemplate, @Value("${app.kafka.sms-topic}") String topic) {
         this.kafkaTemplate = kafkaTemplate;
         this.topic = topic;
     }

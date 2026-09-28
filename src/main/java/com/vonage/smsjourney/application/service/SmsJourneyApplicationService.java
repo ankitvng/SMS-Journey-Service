@@ -10,6 +10,7 @@ import com.vonage.smsjourney.application.port.out.cache.SmsJourneyCachePort;
 import com.vonage.smsjourney.application.service.mapper.SmsJourneyMapper;
 import com.vonage.smsjourney.application.port.out.repository.SmsJourneyRepositoryPort;
 import com.vonage.smsjourney.application.port.out.repository.SmsRepositoryPort;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import com.vonage.smsjourney.domain.exception.JourneyNotFoundException;
 import com.vonage.smsjourney.domain.exception.SmsNotFoundException;
@@ -33,6 +34,7 @@ public class SmsJourneyApplicationService implements GetSmsJourneyUseCase, Creat
     private final SmsJourneyCachePort smsJourneyCache;
 
     @Override
+    @Transactional
     public SmsJourney createSmsJourney(Long smsId, CreateSmsJourneyCommand command) {
         log.info("Creating SMS journey for: {}", smsId);
         Sms sms = smsRepository.findActiveById(smsId).orElseThrow(() -> new SmsNotFoundException(smsId));
